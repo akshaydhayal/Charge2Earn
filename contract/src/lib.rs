@@ -33,70 +33,25 @@ const LISTING_SEED: &[u8] = b"listing"; // + seller_pubkey + nonce
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub enum Instruction {
     /// Initialize program state
-    /// Accounts:
-    /// [signer] admin payer
-    /// [writable] state_pda (created by client)
     Initialize { admin: Pubkey },
 
-    /// Add charger
-    /// Accounts:
-    /// [signer] payer (will pay REG_FEE_LAMPORTS to admin)
-    /// [writable] charger_pda (created by client)
-    /// [writable] state_pda (to send reg fee to admin)
-    AddCharger {
-        code: String,                // unique code up to ~32
-        name: String,
-        city: String,
-        address: String,
-        latitude: f64,
-        longitude: f64,
-        power_kw: f32,
-        rate_points_per_sec: u64,       // points per second
+    AddCharger {code: String,                // unique code up to ~32
+        name: String,city: String,address: String,latitude: f64,longitude: f64,
+        power_kw: f32, rate_points_per_sec: u64,       // points per second
         price_per_sec_lamports: u64,    // how many lamports per second driver pays
     },
-
-    // / Start session
-    // / Accounts:
-    // / [signer] driver
-    // / [writable] session_pda (created by client)
-    // / [readonly ] charger_pda
-    
-    // StartSession { start_ts: i64 },
+    StartSession { start_ts: i64 },
 
     // / Stop session: compute duration, transfer SOL to charger owner, credit AMP points to driver
-    // / Accounts:
-    // / [signer] driver
-    // / [writable] session_pda
-    // / [writable] driver_account_pda
-    // / [writable] charger_pda
-    // / [writable] charger_owner_account (to receive lamports)
-    // / [writable] system_program (for transfers)
-    
-    // StopSession { end_ts: i64 },
+    StopSession { end_ts: i64 },
 
-    // / Create listing (seller reserves points)
-    // / Accounts:
-    // / [signer] seller
-    // / [writable] seller_driver_account_pda
-    // / [writable] listing_pda (created by client)
-    
-    // CreateListing { nonce: u64, amount_points: u64, price_per_point_lamports: u64 },
+    // / Create listing (seller reserves points)   
+    CreateListing { nonce: u64, amount_points: u64, price_per_point_lamports: u64 },
 
-    // / Buy from listing
-    // / Accounts:
-    // / [signer] buyer
-    // / [writable] buyer_driver_account_pda
-    // / [writable] listing_pda
-    // / [writable] seller_account (to receive lamports)
-    
+    // / Buy from listing    
     // BuyFromListing { buy_amount_points: u64 },
 
-    // / Cancel listing
-    // / Accounts:
-    // / [signer] seller
-    // / [writable] seller_driver_account_pda
-    // / [writable] listing_pda
-    
+    // / Cancel listing 
     // CancelListing {},
 }
 
@@ -160,34 +115,16 @@ pub fn process_instruction(
     let ix = Instruction::try_from_slice(input).map_err(|_| ProgramError::InvalidInstructionData)?;
     match ix {
         Instruction::Initialize { admin } => instruction_initialize(program_id, accounts, admin),
-        Instruction::AddCharger {
-            code,
-            name,
-            city,
-            address,
-            latitude,
-            longitude,
-            power_kw,
-            rate_points_per_sec,
-            price_per_sec_lamports,
-        } => instruction_add_charger(
-            program_id,
-            accounts,
-            code,
-            name,
-            city,
-            address,
-            latitude,
-            longitude,
-            power_kw,
-            rate_points_per_sec,
-            price_per_sec_lamports,
+        Instruction::AddCharger { code, name, city, address, latitude,
+            longitude,power_kw,rate_points_per_sec,price_per_sec_lamports,
+        } => instruction_add_charger(program_id,accounts,code,name,city,address,
+            latitude,longitude,power_kw,rate_points_per_sec,price_per_sec_lamports
         ),
-        // Instruction::StartSession { start_ts } => instruction_start_session(program_id, accounts, start_ts),
-        // Instruction::StopSession { end_ts } => instruction_stop_session(program_id, accounts, end_ts),
-        // Instruction::CreateListing { nonce, amount_points, price_per_point_lamports } => {
-        //     instruction_create_listing(program_id, accounts, nonce, amount_points, price_per_point_lamports)
-        // }
+        Instruction::StartSession { start_ts } => instruction_start_session(program_id, accounts, start_ts),
+        Instruction::StopSession { end_ts } => instruction_stop_session(program_id, accounts, end_ts),
+        Instruction::CreateListing { nonce, amount_points, price_per_point_lamports } => {
+            instruction_create_listing(program_id, accounts, nonce, amount_points, price_per_point_lamports)
+        }
         // Instruction::BuyFromListing { buy_amount_points } => instruction_buy_from_listing(program_id, accounts, buy_amount_points),
         // Instruction::CancelListing {} => instruction_cancel_listing(program_id, accounts),
     }
@@ -222,24 +159,42 @@ fn instruction_add_charger(program_id: &Pubkey,accounts: &[AccountInfo],code: St
     let payer = next_account_info(account_info_iter)?; // signer, will pay reg fee
     let charger_account = next_account_info(account_info_iter)?; // writable PDA
     let admin_account = next_account_info(account_info_iter)?; 
-    let state_account = next_account_info(account_info_iter)?; // writable - to read admin
+    // let state_account = next_account_info(account_info_iter)?; // writable - to read admin
 
     if !payer.is_signer {
         msg!("Payer must sign");
         return Err(ProgramError::MissingRequiredSignature);
     }
-
-    // Read state to get admin
-    let state = ProgramState::try_from_slice(&state_account.data.borrow())?;
-    if !state.is_initialized {
-        msg!("State not initialized");
-        return Err(ProgramError::UninitializedAccount);
+    msg!("code : {} , address : {}",code,address);
+    let seeds=&[b"charger",code.as_bytes().as_ref(), payer.key.as_ref()];
+    let (expected_charger_pda_account,bump)=Pubkey::find_program_address(seeds, program_id);
+    let seeds_with_bump=&[b"charger", code.as_bytes(), payer.key.as_ref(), &[bump]];
+    if expected_charger_pda_account!=*charger_account.key{
+        return  Err(ProgramError::InvalidSeeds);
     }
+    let rent=Rent::get()?;
+    let charger_account_size:usize=1+ 32+
+                                   4+ code.len() + 4+ name.len() + 4+ city.len() + 4+ address.len()+
+                                   8+ 8+ 4+ 8+ 8;
+    let charger_min_bal_for_rent_exempt=rent.minimum_balance(charger_account_size);
+    let charger_pda_create_ix=system_instruction::create_account(payer.key,
+        charger_account.key, charger_min_bal_for_rent_exempt, charger_account_size as u64, program_id);
+        invoke_signed(&charger_pda_create_ix,
+        &[payer.clone(), charger_account.clone()], &[seeds_with_bump])?;
+
+    msg!("charger pda created!!");
+    // Read state to get admin
+    // let state = ProgramState::try_from_slice(&state_account.data.borrow())?;
+    // if !state.is_initialized {
+    //     msg!("State not initialized");
+    //     return Err(ProgramError::UninitializedAccount);
+    // }
 
     // Transfer registration fee from payer -> admin
     msg!("Transferring registration fee: {} lamports", REG_FEE_LAMPORTS);
-    let admin_pubkey = state.admin;
-    let transfer_ix = system_instruction::transfer(payer.key, &admin_pubkey, REG_FEE_LAMPORTS);
+    // let admin_pubkey = state.admin;
+    // let transfer_ix = system_instruction::transfer(payer.key, &admin_pubkey, REG_FEE_LAMPORTS);
+    let transfer_ix = system_instruction::transfer(payer.key, admin_account.key, REG_FEE_LAMPORTS);
     invoke(
         &transfer_ix,
         &[ payer.clone(), admin_account.clone()
@@ -263,49 +218,88 @@ fn instruction_add_charger(program_id: &Pubkey,accounts: &[AccountInfo],code: St
     Ok(())
 }
 
+
 fn instruction_start_session(program_id: &Pubkey, accounts: &[AccountInfo], start_ts: i64) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
-    let driver = next_account_info(account_info_iter)?; // signer
-    let session_account = next_account_info(account_info_iter)?; // writable PDA
-    let charger_account = next_account_info(account_info_iter)?; // readonly
 
-    if !driver.is_signer {
-        msg!("Driver must sign");
-        return Err(ProgramError::MissingRequiredSignature);
+    let user = next_account_info(account_info_iter)?; // signer
+    let driver_pda = next_account_info(account_info_iter)?; // signer
+    let session_pda = next_account_info(account_info_iter)?; // writable PDA
+    let charger_pda = next_account_info(account_info_iter)?; // readonly
+
+    msg!("start ts in contract : {}",start_ts);
+
+    let driver_seeds=&[b"driver",user.key.as_ref()];
+    let (expected_driver_pda,bump)=Pubkey::find_program_address(driver_seeds, program_id);
+    msg!("expected_driver_pda : {}",expected_driver_pda);
+    let driver_seeds_with_bump=&[b"driver",user.key.as_ref(),&[bump]];
+    if expected_driver_pda!=*driver_pda.key{
+        return Err(ProgramError::InvalidSeeds);
     }
 
+    //Create driver account if it does not exists
+    if driver_pda.data_is_empty(){
+        let rent=Rent::get()?;
+        let driver_pda_account_size:usize=1+ 32+ 8;
+        let driver_pda_rent_exempt_bal=rent.minimum_balance(driver_pda_account_size);
+        let driver_pda_create_ix=system_instruction::create_account(user.key,
+            driver_pda.key, driver_pda_rent_exempt_bal, driver_pda_account_size as u64, program_id);
+        invoke_signed(&driver_pda_create_ix,
+            &[user.clone(), driver_pda.clone()],
+            &[driver_seeds_with_bump])?;
+            msg!("driver pda created");
+    }
+
+    let driver_data=DriverAccount{owner:*user.key, is_initialized:true, amp_balance:0};
+    driver_data.serialize(&mut *driver_pda.data.borrow_mut())?;
+    msg!("driver pda data updated"); 
+
+    //Create Session account if it does not exists
+    let start_ts_bytes=start_ts.to_le_bytes();
+    let session_seeds=&[b"session",charger_pda.key.as_ref(), driver_pda.key.as_ref(),start_ts_bytes.as_ref()];
+    let (expected_session_pda,bump)=Pubkey::find_program_address(session_seeds, program_id);
+    msg!("expected_session_pda : {}",expected_session_pda);
+    let session_seeds_with_bump=&[b"session",charger_pda.key.as_ref(), driver_pda.key.as_ref(),start_ts_bytes.as_ref(),&[bump]];
+    if expected_session_pda!=*session_pda.key{
+        return Err(ProgramError::InvalidSeeds);
+    }
+    
+    let rent=Rent::get()?;
+    let session_pda_account_size:usize=1+ 32+ 32+ 8+ 8+ 8+ 1;
+    let session_pda_rent_exempt_bal=rent.minimum_balance(session_pda_account_size);
+    let session_pda_create_ix=system_instruction::create_account(user.key,
+        session_pda.key, session_pda_rent_exempt_bal, session_pda_account_size as u64, program_id);
+    invoke_signed(&session_pda_create_ix,
+        &[user.clone(), session_pda.clone()],
+        &[session_seeds_with_bump])?;
+    msg!("session pda created");
+
     // Verify charger exists
-    let charger = ChargerAccount::try_from_slice(&charger_account.data.borrow())?;
+    let charger = ChargerAccount::try_from_slice(&charger_pda.data.borrow())?;
     if !charger.is_initialized {
         msg!("Charger not initialized");
         return Err(ProgramError::UninitializedAccount);
     }
 
     // Create session record
-    let session = SessionAccount {
-        is_initialized: true,
-        driver: *driver.key,
-        charger: *charger_account.key,
-        start_ts,
-        end_ts: 0,
-        points_awarded: 0,
-        settled: false,
+    let session = SessionAccount {is_initialized: true, driver: *driver_pda.key,
+        charger: *charger_pda.key, start_ts, end_ts: 0, points_awarded: 0, settled: false,
     };
-    session.serialize(&mut *session_account.data.borrow_mut())?;
+    session.serialize(&mut *session_pda.data.borrow_mut())?;
     msg!("Session started at {}", start_ts);
     Ok(())
 }
 
 fn instruction_stop_session(program_id: &Pubkey, accounts: &[AccountInfo], end_ts: i64) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
-    let driver = next_account_info(account_info_iter)?; // signer
+    let user = next_account_info(account_info_iter)?; // signer
     let session_account = next_account_info(account_info_iter)?; // writable
-    let driver_account = next_account_info(account_info_iter)?; // writable DriverAccount PDA
-    let charger_account = next_account_info(account_info_iter)?; // writable ChargerAccount
+    let driver_pda = next_account_info(account_info_iter)?; // writable DriverAccount PDA
+    let charger_pda = next_account_info(account_info_iter)?; // writable ChargerAccount
     let charger_owner_account = next_account_info(account_info_iter)?; // writable receiver
     let system_program_acc = next_account_info(account_info_iter)?;
 
-    if !driver.is_signer {
+    if !user.is_signer {
         msg!("Driver must sign");
         return Err(ProgramError::MissingRequiredSignature);
     }
@@ -329,7 +323,7 @@ fn instruction_stop_session(program_id: &Pubkey, accounts: &[AccountInfo], end_t
     let duration_secs = (end_ts - start) as u64;
 
     // read charger to get rates
-    let charger = ChargerAccount::try_from_slice(&charger_account.data.borrow())?;
+    let charger = ChargerAccount::try_from_slice(&charger_pda.data.borrow())?;
     if !charger.is_initialized {
         msg!("Charger uninitialized");
         return Err(ProgramError::UninitializedAccount);
@@ -341,11 +335,11 @@ fn instruction_stop_session(program_id: &Pubkey, accounts: &[AccountInfo], end_t
 
     // Transfer lamports from driver -> charger owner
     // driver must sign; include both driver and charger_owner in accounts
-    let transfer_ix = system_instruction::transfer(driver.key, &charger.authority, total_price);
+    let transfer_ix = system_instruction::transfer(user.key, &charger.authority, total_price);
     invoke(
         &transfer_ix,
         &[
-            driver.clone(),
+            user.clone(),
             charger_owner_account.clone(), // MUST be the same pubkey as charger.authority; client must pass it
             system_program_acc.clone(),
         ],
@@ -353,21 +347,16 @@ fn instruction_stop_session(program_id: &Pubkey, accounts: &[AccountInfo], end_t
 
     // credit points to driver account
     let points_awarded = charger.rate_points_per_sec.checked_mul(duration_secs).ok_or(ProgramError::InvalidArgument)?;
-    let mut drv_acc = DriverAccount::try_from_slice(&driver_account.data.borrow()).unwrap_or(DriverAccount {
-        is_initialized: true,
-        owner: *driver.key,
-        amp_balance: 0,
-    });
+    let mut drv_acc = DriverAccount::try_from_slice(&driver_pda.data.borrow())?;
 
     // sanity: driver_account.owner must match signer
-    if drv_acc.owner != *driver.key && drv_acc.owner != Pubkey::default() {
+    if drv_acc.owner != *user.key && drv_acc.owner != Pubkey::default() {
         msg!("Driver account owner mismatch");
         return Err(ProgramError::IllegalOwner);
     }
-    drv_acc.is_initialized = true;
-    drv_acc.owner = *driver.key;
+   
     drv_acc.amp_balance = drv_acc.amp_balance.checked_add(points_awarded).ok_or(ProgramError::InvalidArgument)?;
-    drv_acc.serialize(&mut *driver_account.data.borrow_mut())?;
+    drv_acc.serialize(&mut *driver_pda.data.borrow_mut())?;
 
     // update session
     session.end_ts = end_ts;
@@ -381,22 +370,22 @@ fn instruction_stop_session(program_id: &Pubkey, accounts: &[AccountInfo], end_t
 
 fn instruction_create_listing(program_id: &Pubkey, accounts: &[AccountInfo], nonce: u64, amount_points: u64, price_per_point_lamports: u64) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
-    let seller = next_account_info(account_info_iter)?; // signer
-    let seller_driver_acc = next_account_info(account_info_iter)?; // writable DriverAccount PDA
-    let listing_acc = next_account_info(account_info_iter)?; // writable listing PDA
+    let user = next_account_info(account_info_iter)?; // signer
+    let driver_pda = next_account_info(account_info_iter)?; // writable DriverAccount PDA
+    let listing_pda = next_account_info(account_info_iter)?; // writable listing PDA
 
-    if !seller.is_signer {
+    if !user.is_signer {
         msg!("Seller must sign");
         return Err(ProgramError::MissingRequiredSignature);
     }
 
     // load seller driver acc
-    let mut drv_acc = DriverAccount::try_from_slice(&seller_driver_acc.data.borrow()).map_err(|_| ProgramError::UninitializedAccount)?;
+    let mut drv_acc = DriverAccount::try_from_slice(&driver_pda.data.borrow()).map_err(|_| ProgramError::UninitializedAccount)?;
     if !drv_acc.is_initialized {
         msg!("Seller driver account not init");
         return Err(ProgramError::UninitializedAccount);
     }
-    if drv_acc.owner != *seller.key {
+    if drv_acc.owner != *user.key {
         msg!("Seller does not own driver account");
         return Err(ProgramError::IllegalOwner);
     }
@@ -407,17 +396,17 @@ fn instruction_create_listing(program_id: &Pubkey, accounts: &[AccountInfo], non
 
     // deduct points into listing reservation
     drv_acc.amp_balance = drv_acc.amp_balance.checked_sub(amount_points).ok_or(ProgramError::InvalidArgument)?;
-    drv_acc.serialize(&mut *seller_driver_acc.data.borrow_mut())?;
+    drv_acc.serialize(&mut *driver_pda.data.borrow_mut())?;
 
     let listing = ListingAccount {
         is_initialized: true,
-        seller: *seller.key,
+        seller: *user.key,
         nonce,
         amount_total: amount_points,
         amount_remaining: amount_points,
         price_per_point_lamports,
     };
-    listing.serialize(&mut *listing_acc.data.borrow_mut())?;
+    listing.serialize(&mut *listing_pda.data.borrow_mut())?;
     msg!("Listing created: {} points at {} lamports each", amount_points, price_per_point_lamports);
     Ok(())
 }
