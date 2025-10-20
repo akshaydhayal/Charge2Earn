@@ -33,8 +33,6 @@ const USER_SEED: &[u8] = b"user"; // + user_pubkey
 // ----- Instructions -----
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub enum Instruction {
-    /// Initialize program state
-    Initialize { admin: Pubkey },
 
     AddCharger {code: String,                // unique code up to ~32
         name: String,city: String,address: String,latitude: f64,longitude: f64,
@@ -47,7 +45,6 @@ pub enum Instruction {
     StopSession { end_ts: i64 },
 
     // / Create listing (seller reserves points)   
-    // CreateListing { nonce: u64, amount_points: u64, price_per_point_lamports: u64 },
     CreateListing { amount_points: u64, price_per_point_lamports: u64 },
 
     // / Buy from listing    
@@ -58,11 +55,6 @@ pub enum Instruction {
 }
 
 // ----- State structs -----
-#[derive(BorshSerialize, BorshDeserialize, Debug)]
-pub struct ProgramState {
-    pub is_initialized: bool,
-    pub admin: Pubkey,
-}
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct ChargerAccount {
@@ -108,9 +100,7 @@ pub struct SessionAccount {
 pub struct ListingAccount {
     pub is_initialized: bool,
     pub seller: Pubkey,
-    // pub nonce: u64,
     pub amount_total: u64,
-    // pub amount_remaining: u64,
     pub price_per_point_lamports: u64,
 }
 
@@ -123,7 +113,7 @@ pub fn process_instruction(
 ) -> ProgramResult {
     let ix = Instruction::try_from_slice(input).map_err(|_| ProgramError::InvalidInstructionData)?;
     match ix {
-        Instruction::Initialize { admin } => instruction_initialize(program_id, accounts, admin),
+        // Instruction::Initialize { admin } => instruction_initialize(program_id, accounts, admin),
         Instruction::AddCharger { code, name, city, address, latitude,
             longitude,power_kw,rate_points_per_sec,price_per_sec_lamports,
         } => instruction_add_charger(program_id,accounts,code,name,city,address,
@@ -141,34 +131,13 @@ pub fn process_instruction(
 
 // ---------- Instruction handlers ----------
 
-fn instruction_initialize(program_id: &Pubkey, accounts: &[AccountInfo], admin: Pubkey) -> ProgramResult {
-    let account_info_iter = &mut accounts.iter();
-    let admin_signer = next_account_info(account_info_iter)?; // signer
-    let state_account = next_account_info(account_info_iter)?; // writable, PDA
-
-    if !admin_signer.is_signer {
-        msg!("Admin must sign");
-        return Err(ProgramError::MissingRequiredSignature);
-    }
-
-    // Write state
-    let mut state_data = ProgramState::try_from_slice(&state_account.data.borrow()).unwrap_or(ProgramState { is_initialized: false, admin: Pubkey::default() });
-    state_data.is_initialized = true;
-    state_data.admin = admin;
-    state_data.serialize(&mut *state_account.data.borrow_mut())?;
-
-    msg!("Initialized program state");
-    Ok(())
-}
-
 fn instruction_add_charger(program_id: &Pubkey,accounts: &[AccountInfo],code: String,name: String,
     city: String,address: String,latitude: f64,longitude: f64,power_kw: f32,rate_points_per_sec: u64,price_per_sec_lamports: u64,
 ) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let payer = next_account_info(account_info_iter)?; // signer, will pay reg fee
-    let charger_account = next_account_info(account_info_iter)?; // writable PDA
+    let charger_pda = next_account_info(account_info_iter)?; // writable PDA
     let admin_account = next_account_info(account_info_iter)?; 
-    // let state_account = next_account_info(account_info_iter)?; // writable - to read admin
 
     if !payer.is_signer {
         msg!("Payer must sign");
@@ -178,7 +147,7 @@ fn instruction_add_charger(program_id: &Pubkey,accounts: &[AccountInfo],code: St
     let seeds=&[b"charger",code.as_bytes().as_ref(), payer.key.as_ref()];
     let (expected_charger_pda_account,bump)=Pubkey::find_program_address(seeds, program_id);
     let seeds_with_bump=&[b"charger", code.as_bytes(), payer.key.as_ref(), &[bump]];
-    if expected_charger_pda_account!=*charger_account.key{
+    if expected_charger_pda_account!=*charger_pda.key{
         return  Err(ProgramError::InvalidSeeds);
     }
     let rent=Rent::get()?;
@@ -187,29 +156,18 @@ fn instruction_add_charger(program_id: &Pubkey,accounts: &[AccountInfo],code: St
                                    8+ 8+ 4+ 8+ 8;
     let charger_min_bal_for_rent_exempt=rent.minimum_balance(charger_account_size);
     let charger_pda_create_ix=system_instruction::create_account(payer.key,
-        charger_account.key, charger_min_bal_for_rent_exempt, charger_account_size as u64, program_id);
+        charger_pda.key, charger_min_bal_for_rent_exempt, charger_account_size as u64, program_id);
         invoke_signed(&charger_pda_create_ix,
-        &[payer.clone(), charger_account.clone()], &[seeds_with_bump])?;
+        &[payer.clone(), charger_pda.clone()], &[seeds_with_bump])?;
 
     msg!("charger pda created!!");
-    // Read state to get admin
-    // let state = ProgramState::try_from_slice(&state_account.data.borrow())?;
-    // if !state.is_initialized {
-    //     msg!("State not initialized");
-    //     return Err(ProgramError::UninitializedAccount);
-    // }
 
     // Transfer registration fee from payer -> admin
     msg!("Transferring registration fee: {} lamports", REG_FEE_LAMPORTS);
-    // let admin_pubkey = state.admin;
-    // let transfer_ix = system_instruction::transfer(payer.key, &admin_pubkey, REG_FEE_LAMPORTS);
     let transfer_ix = system_instruction::transfer(payer.key, admin_account.key, REG_FEE_LAMPORTS);
     invoke(
         &transfer_ix,
-        &[ payer.clone(), admin_account.clone()
-            // AccountInfo::new(&admin_pubkey, false, true, &mut 0u64, // dummy; not used by invoke because admin account is a system account already in runtime; client must include it as writable account if needed
-            //     &mut [], &system_program::ID, false, 0),
-        ],
+        &[ payer.clone(), admin_account.clone()],
     ).map(|_| ()).map_err(|e| {
         msg!("Registration transfer failed: {:?}", e);
         e
@@ -221,8 +179,7 @@ fn instruction_add_charger(program_id: &Pubkey,accounts: &[AccountInfo],code: St
     let mut charger = ChargerAccount { is_initialized: true, authority: *payer.key,
         code, name, city, address, latitude, longitude, power_kw, rate_points_per_sec, price_per_sec_lamports,
     };
-    charger.serialize(&mut *charger_account.data.borrow_mut())?;
-
+    charger.serialize(&mut *charger_pda.data.borrow_mut())?;
     msg!("Charger added by {}", payer.key);
     Ok(())
 }
@@ -302,7 +259,7 @@ fn instruction_start_session(program_id: &Pubkey, accounts: &[AccountInfo], star
 fn instruction_stop_session(program_id: &Pubkey, accounts: &[AccountInfo], end_ts: i64) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let user = next_account_info(account_info_iter)?; // signer
-    let session_account = next_account_info(account_info_iter)?; // writable
+    let session_pda = next_account_info(account_info_iter)?; // writable
     let driver_pda = next_account_info(account_info_iter)?; // writable DriverAccount PDA
     let charger_pda = next_account_info(account_info_iter)?; // writable ChargerAccount
     let charger_owner_account = next_account_info(account_info_iter)?; // writable receiver
@@ -313,7 +270,7 @@ fn instruction_stop_session(program_id: &Pubkey, accounts: &[AccountInfo], end_t
         return Err(ProgramError::MissingRequiredSignature);
     }
 
-    let mut session = SessionAccount::try_from_slice(&session_account.data.borrow())?;
+    let mut session = SessionAccount::try_from_slice(&session_pda.data.borrow())?;
     if !session.is_initialized {
         msg!("Session not inited");
         return Err(ProgramError::UninitializedAccount);
@@ -371,13 +328,12 @@ fn instruction_stop_session(program_id: &Pubkey, accounts: &[AccountInfo], end_t
     session.end_ts = end_ts;
     session.points_awarded = points_awarded;
     session.settled = true;
-    session.serialize(&mut *session_account.data.borrow_mut())?;
+    session.serialize(&mut *session_pda.data.borrow_mut())?;
 
     msg!("Stopped session. awarded {} points", points_awarded);
     Ok(())
 }
 
-// fn instruction_create_listing(program_id: &Pubkey, accounts: &[AccountInfo], nonce: u64, amount_points: u64, price_per_point_lamports: u64) -> ProgramResult {
 fn instruction_create_listing(program_id: &Pubkey, accounts: &[AccountInfo], amount_points: u64, price_per_point_lamports: u64) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let user = next_account_info(account_info_iter)?; // signer
@@ -485,7 +441,6 @@ fn instruction_buy_from_listing(program_id: &Pubkey, accounts: &[AccountInfo], b
             system_program_acc.clone(),
         ],
     )?;
-
 
     // credit points to buyer driver account
     let user_seeds=&[b"user", user.key.as_ref()];

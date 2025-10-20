@@ -97,7 +97,7 @@ describe("Charge2Earn tests",()=>{
         user=Keypair.fromSecretKey(Uint8Array.from([48,182,182,234,169,224,236,113,52,199,47,66,39,2,163,52,183,44,45,27,127,49,133,151,64,70,248,16,46,218,234,198,42,180,5,68,243,235,189,56,197,37,17,85,205,189,100,191,64,74,171,3,37,193,199,195,213,54,156,198,228,15,248,188]));
         energyProgram=new PublicKey("E4pyU4z4hM7XPGVPgJdx8tbfnMWmLzXH8ahtvvuXmiBW");
 
-        chargerCode="xyz35";
+        chargerCode="xyz36";
         [chargerPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("charger"), Buffer.from(chargerCode), user.publicKey.toBuffer()],energyProgram);
         console.log("charger pda : ",chargerPda.toBase58());
         
@@ -109,7 +109,6 @@ describe("Charge2Earn tests",()=>{
         let serialised_start_ts=borsh.serialize(sessionIxSchema,{time:start_ts})
         console.log('serialised_start_ts : ',serialised_start_ts);
         
-        // [sessionPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("session"),chargerPda.toBuffer(), driverPda.toBuffer(), Buffer.from([start_ts])],energyProgram);
         [sessionPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("session"),chargerPda.toBuffer(), driverPda.toBuffer(), serialised_start_ts],energyProgram);
         console.log("session pda : ",sessionPda.toBase58());
     }),
@@ -129,7 +128,7 @@ describe("Charge2Earn tests",()=>{
                 {pubkey:admin.publicKey, isWritable:true, isSigner:false},
                 {pubkey:SystemProgram.programId, isWritable:false, isSigner:false}
             ],
-            data:Buffer.concat([Buffer.from([1]) , serialisedChargerData])
+            data:Buffer.concat([Buffer.from([0]) , serialisedChargerData])
         });
         let tx=new Transaction().add(ix);
         tx.recentBlockhash=(await connection.getLatestBlockhash()).blockhash;
@@ -156,7 +155,7 @@ describe("Charge2Earn tests",()=>{
                 {pubkey:chargerPda, isSigner:false, isWritable:false},
                 {pubkey:SystemProgram.programId, isSigner:false, isWritable:false}
             ],
-            data:Buffer.concat([Buffer.from([2]), serialised_start_ts])
+            data:Buffer.concat([Buffer.from([1]), serialised_start_ts])
         });
         let tx=new Transaction().add(ix);
         tx.recentBlockhash=(await connection.getLatestBlockhash()).blockhash;
@@ -190,7 +189,7 @@ describe("Charge2Earn tests",()=>{
                 {pubkey:chargerOwner, isSigner:false, isWritable:false},
                 {pubkey:SystemProgram.programId, isSigner:false, isWritable:false}
             ],
-            data:Buffer.concat([Buffer.from([3]), serialised_end_ts])
+            data:Buffer.concat([Buffer.from([2]), serialised_end_ts])
         });
         let tx=new Transaction().add(ix);
         tx.recentBlockhash=(await connection.getLatestBlockhash()).blockhash;
@@ -221,7 +220,7 @@ describe("Charge2Earn tests",()=>{
                 {pubkey:listingPda, isSigner:false, isWritable:true},
                 {pubkey:SystemProgram.programId, isSigner:false, isWritable:false}
             ],
-            data:Buffer.concat([Buffer.from([4]), serialisedListingData])
+            data:Buffer.concat([Buffer.from([3]), serialisedListingData])
         });
         let tx=new Transaction().add(ix);
         tx.recentBlockhash=(await connection.getLatestBlockhash()).blockhash;
@@ -252,7 +251,7 @@ describe("Charge2Earn tests",()=>{
                 {pubkey:listingPda, isSigner:false, isWritable:true},
                 {pubkey:SystemProgram.programId, isSigner:false, isWritable:false}
             ],
-            data:Buffer.concat([Buffer.from([4]), serialisedListingData])
+            data:Buffer.concat([Buffer.from([3]), serialisedListingData])
         });
         let tx=new Transaction().add(ix);
         tx.recentBlockhash=(await connection.getLatestBlockhash()).blockhash;
@@ -285,7 +284,7 @@ describe("Charge2Earn tests",()=>{
                 {pubkey:driverPda, isSigner:false, isWritable:true},
                 {pubkey:SystemProgram.programId, isSigner:false, isWritable:false}
             ],
-            data:Buffer.concat([Buffer.from([5]), serialisedBuyListingData])
+            data:Buffer.concat([Buffer.from([4]), serialisedBuyListingData])
         });
         let tx=new Transaction().add(ix);
         tx.recentBlockhash=(await connection.getLatestBlockhash()).blockhash;
@@ -306,19 +305,15 @@ describe("Charge2Earn tests",()=>{
     ,
     test("cancel listing",async()=>{
         let [listingPda,bump1]=PublicKey.findProgramAddressSync([Buffer.from("listing"),user.publicKey.toBuffer()],energyProgram);
-        // let [userPda,bump2]=PublicKey.findProgramAddressSync([Buffer.from("user"),user.publicKey.toBuffer()],energyProgram);
         
-        // let serialisedBuyListingData=borsh.serialize(buyListingIxSchema,{buy_points: 135})
         let ix=new TransactionInstruction({
             programId:energyProgram,
             keys:[
                 {pubkey:user.publicKey, isSigner:true, isWritable:false},
-                // {pubkey:userPda, isSigner:false, isWritable:true},
                 {pubkey:driverPda, isSigner:false, isWritable:true},
                 {pubkey:listingPda, isSigner:false, isWritable:true},
-                // {pubkey:SystemProgram.programId, isSigner:false, isWritable:false}
             ],
-            data:Buffer.from([6])
+            data:Buffer.from([5])
         });
         let tx=new Transaction().add(ix);
         tx.recentBlockhash=(await connection.getLatestBlockhash()).blockhash;
@@ -326,7 +321,6 @@ describe("Charge2Earn tests",()=>{
         let txStatus=await connection.sendRawTransaction(tx.serialize());
         await connection.confirmTransaction(txStatus,"finalized");
         console.log("cancel listing tx : ",txStatus);
-        
         
         let listingData=await connection.getAccountInfo(listingPda);
         let deserialisedListingData=borsh.deserialize(listingSchema,listingData?.data);
