@@ -46,8 +46,7 @@ pub enum Instruction {
     StopSession { end_ts: i64 },
 
     // / Create listing (seller reserves points)   
-    // CreateListing { nonce: u64, amount_points: u64, price_per_point_lamports: u64 },
-    CreateListing { amount_points: u64, price_per_point_lamports: u64 },
+    CreateListing { nonce: u64, amount_points: u64, price_per_point_lamports: u64 },
 
     // / Buy from listing    
     // BuyFromListing { buy_amount_points: u64 },
@@ -100,9 +99,9 @@ pub struct SessionAccount {
 pub struct ListingAccount {
     pub is_initialized: bool,
     pub seller: Pubkey,
-    // pub nonce: u64,
+    pub nonce: u64,
     pub amount_total: u64,
-    // pub amount_remaining: u64,
+    pub amount_remaining: u64,
     pub price_per_point_lamports: u64,
 }
 
@@ -123,11 +122,8 @@ pub fn process_instruction(
         ),
         Instruction::StartSession { start_ts } => instruction_start_session(program_id, accounts, start_ts),
         Instruction::StopSession { end_ts } => instruction_stop_session(program_id, accounts, end_ts),
-        // Instruction::CreateListing { nonce, amount_points, price_per_point_lamports } => {
-        //     instruction_create_listing(program_id, accounts, nonce, amount_points, price_per_point_lamports)
-        // }
-        Instruction::CreateListing { amount_points, price_per_point_lamports } => {
-            instruction_create_listing(program_id, accounts,  amount_points, price_per_point_lamports)
+        Instruction::CreateListing { nonce, amount_points, price_per_point_lamports } => {
+            instruction_create_listing(program_id, accounts, nonce, amount_points, price_per_point_lamports)
         }
         // Instruction::BuyFromListing { buy_amount_points } => instruction_buy_from_listing(program_id, accounts, buy_amount_points),
         // Instruction::CancelListing {} => instruction_cancel_listing(program_id, accounts),
@@ -372,8 +368,7 @@ fn instruction_stop_session(program_id: &Pubkey, accounts: &[AccountInfo], end_t
     Ok(())
 }
 
-// fn instruction_create_listing(program_id: &Pubkey, accounts: &[AccountInfo], nonce: u64, amount_points: u64, price_per_point_lamports: u64) -> ProgramResult {
-fn instruction_create_listing(program_id: &Pubkey, accounts: &[AccountInfo], amount_points: u64, price_per_point_lamports: u64) -> ProgramResult {
+fn instruction_create_listing(program_id: &Pubkey, accounts: &[AccountInfo], nonce: u64, amount_points: u64, price_per_point_lamports: u64) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
     let user = next_account_info(account_info_iter)?; // signer
     let driver_pda = next_account_info(account_info_iter)?; // writable DriverAccount PDA
@@ -404,147 +399,134 @@ fn instruction_create_listing(program_id: &Pubkey, accounts: &[AccountInfo], amo
     drv_acc.serialize(&mut *driver_pda.data.borrow_mut())?;
 
 
-    if listing_pda.data_is_empty(){
-        // let nonce_bytes=nonce.to_le_bytes();
-        // let listing_seeds=&[b"listing", user.key.as_ref(), nonce_bytes.as_ref()];
-        let listing_seeds=&[b"listing", user.key.as_ref()];
-        let (expected_listing_pda_account,bump)=Pubkey::find_program_address(listing_seeds, program_id);
-        // let listing_seeds_with_bump=&[b"listing", user.key.as_ref(), nonce_bytes.as_ref(), &[bump]];
-        let listing_seeds_with_bump=&[b"listing", user.key.as_ref(), &[bump]];
-        if expected_listing_pda_account!=*listing_pda.key{
-            return  Err(ProgramError::InvalidSeeds);
-        }
-        let rent=Rent::get()?;
-        // let listing_account_size:usize=1+ 32+ 8+ 8+ 8+ 8;
-        let listing_account_size:usize=1+ 32+ 8+ 8;
-        let listing_min_bal_for_rent_exempt=rent.minimum_balance(listing_account_size);
-        let listing_pda_create_ix=system_instruction::create_account(user.key,
-            listing_pda.key, listing_min_bal_for_rent_exempt, listing_account_size as u64, program_id);
-            invoke_signed(&listing_pda_create_ix,
-            &[user.clone(), listing_pda.clone()],
-            &[listing_seeds_with_bump])?;
-    
-        msg!("listing pda created!!");
-        // const LISTING_SEED: &[u8] = b"listing"; // + seller_pubkey + nonce
-
-        let listing = ListingAccount {
-            is_initialized: true,
-            seller: *user.key,
-            // nonce,
-            amount_total: amount_points,
-            // amount_remaining: amount_points,
-            price_per_point_lamports,
-        };
-        listing.serialize(&mut *listing_pda.data.borrow_mut())?;
-        msg!("Listing created: {} points at {} lamports each", amount_points, price_per_point_lamports);
-    }else{
-        let mut listing_data=ListingAccount::try_from_slice(&listing_pda.data.borrow())?;
-        msg!("before amount points : {}",listing_data.amount_total);
-        // listing_data.price_per_point_lamports=price_per_point_lamports;
-        listing_data.amount_total+=amount_points;
-        listing_data.serialize(&mut *listing_pda.data.borrow_mut())?;
-        msg!("Listing updated: {} points at {} lamports each", amount_points, price_per_point_lamports);
+    let nonce_bytes=nonce.to_le_bytes();
+    let listing_seeds=&[b"listing", user.key.as_ref(), nonce_bytes.as_ref()];
+    let (expected_listing_pda_account,bump)=Pubkey::find_program_address(listing_seeds, program_id);
+    let listing_seeds_with_bump=&[b"listing", user.key.as_ref(), nonce_bytes.as_ref(), &[bump]];
+    if expected_listing_pda_account!=*listing_pda.key{
+        return  Err(ProgramError::InvalidSeeds);
     }
+    let rent=Rent::get()?;
+    let listing_account_size:usize=1+ 32+ 8+ 8+ 8+ 8;
+    let listing_min_bal_for_rent_exempt=rent.minimum_balance(listing_account_size);
+    let listing_pda_create_ix=system_instruction::create_account(user.key,
+        listing_pda.key, listing_min_bal_for_rent_exempt, listing_account_size as u64, program_id);
+        invoke_signed(&listing_pda_create_ix,
+        &[user.clone(), listing_pda.clone()],
+        &[listing_seeds_with_bump])?;
 
+    msg!("listing pda created!!");
+    // const LISTING_SEED: &[u8] = b"listing"; // + seller_pubkey + nonce
+
+    let listing = ListingAccount {
+        is_initialized: true,
+        seller: *user.key,
+        nonce,
+        amount_total: amount_points,
+        amount_remaining: amount_points,
+        price_per_point_lamports,
+    };
+    listing.serialize(&mut *listing_pda.data.borrow_mut())?;
+    msg!("Listing created: {} points at {} lamports each", amount_points, price_per_point_lamports);
     Ok(())
 }
 
-// fn instruction_buy_from_listing(program_id: &Pubkey, accounts: &[AccountInfo], buy_amount_points: u64) -> ProgramResult {
-//     let account_info_iter = &mut accounts.iter();
-//     let buyer = next_account_info(account_info_iter)?; // signer
-//     let buyer_driver_acc = next_account_info(account_info_iter)?; // writable buyer DriverAccount PDA
-//     let listing_acc = next_account_info(account_info_iter)?; // writable listing PDA
-//     let seller_account = next_account_info(account_info_iter)?; // writable seller pubkey to receive lamports
-//     let system_program_acc = next_account_info(account_info_iter)?;
+fn instruction_buy_from_listing(program_id: &Pubkey, accounts: &[AccountInfo], buy_amount_points: u64) -> ProgramResult {
+    let account_info_iter = &mut accounts.iter();
+    let buyer = next_account_info(account_info_iter)?; // signer
+    let buyer_driver_acc = next_account_info(account_info_iter)?; // writable buyer DriverAccount PDA
+    let listing_acc = next_account_info(account_info_iter)?; // writable listing PDA
+    let seller_account = next_account_info(account_info_iter)?; // writable seller pubkey to receive lamports
+    let system_program_acc = next_account_info(account_info_iter)?;
 
-//     if !buyer.is_signer {
-//         msg!("Buyer must sign");
-//         return Err(ProgramError::MissingRequiredSignature);
-//     }
+    if !buyer.is_signer {
+        msg!("Buyer must sign");
+        return Err(ProgramError::MissingRequiredSignature);
+    }
 
-//     let mut listing = ListingAccount::try_from_slice(&listing_acc.data.borrow()).map_err(|_| ProgramError::UninitializedAccount)?;
-//     if !listing.is_initialized {
-//         msg!("Listing not initialized");
-//         return Err(ProgramError::UninitializedAccount);
-//     }
-//     if buy_amount_points == 0 || buy_amount_points > listing.amount_remaining {
-//         msg!("Invalid buy amount");
-//         return Err(ProgramError::InvalidArgument);
-//     }
+    let mut listing = ListingAccount::try_from_slice(&listing_acc.data.borrow()).map_err(|_| ProgramError::UninitializedAccount)?;
+    if !listing.is_initialized {
+        msg!("Listing not initialized");
+        return Err(ProgramError::UninitializedAccount);
+    }
+    if buy_amount_points == 0 || buy_amount_points > listing.amount_remaining {
+        msg!("Invalid buy amount");
+        return Err(ProgramError::InvalidArgument);
+    }
 
-//     // total price
-//     let total_price = listing.price_per_point_lamports.checked_mul(buy_amount_points).ok_or(ProgramError::InvalidArgument)?;
-//     msg!("Buyer must pay {} lamports", total_price);
+    // total price
+    let total_price = listing.price_per_point_lamports.checked_mul(buy_amount_points).ok_or(ProgramError::InvalidArgument)?;
+    msg!("Buyer must pay {} lamports", total_price);
 
-//     // transfer lamports from buyer -> seller
-//     let transfer_ix = system_instruction::transfer(buyer.key, &listing.seller, total_price);
-//     invoke(
-//         &transfer_ix,
-//         &[
-//             buyer.clone(),
-//             seller_account.clone(), // client must pass listing.seller account
-//             system_program_acc.clone(),
-//         ],
-//     )?;
+    // transfer lamports from buyer -> seller
+    let transfer_ix = system_instruction::transfer(buyer.key, &listing.seller, total_price);
+    invoke(
+        &transfer_ix,
+        &[
+            buyer.clone(),
+            seller_account.clone(), // client must pass listing.seller account
+            system_program_acc.clone(),
+        ],
+    )?;
 
-//     // credit points to buyer driver account
-//     let mut buyer_drv = DriverAccount::try_from_slice(&buyer_driver_acc.data.borrow()).unwrap_or(DriverAccount {
-//         is_initialized: true,
-//         owner: *buyer.key,
-//         amp_balance: 0,
-//     });
-//     if buyer_drv.owner != *buyer.key && buyer_drv.owner != Pubkey::default() {
-//         msg!("Buyer driver owner mismatch");
-//         return Err(ProgramError::IllegalOwner);
-//     }
-//     buyer_drv.is_initialized = true;
-//     buyer_drv.owner = *buyer.key;
-//     buyer_drv.amp_balance = buyer_drv.amp_balance.checked_add(buy_amount_points).ok_or(ProgramError::InvalidArgument)?;
-//     buyer_drv.serialize(&mut *buyer_driver_acc.data.borrow_mut())?;
+    // credit points to buyer driver account
+    let mut buyer_drv = DriverAccount::try_from_slice(&buyer_driver_acc.data.borrow()).unwrap_or(DriverAccount {
+        is_initialized: true,
+        owner: *buyer.key,
+        amp_balance: 0,
+    });
+    if buyer_drv.owner != *buyer.key && buyer_drv.owner != Pubkey::default() {
+        msg!("Buyer driver owner mismatch");
+        return Err(ProgramError::IllegalOwner);
+    }
+    buyer_drv.is_initialized = true;
+    buyer_drv.owner = *buyer.key;
+    buyer_drv.amp_balance = buyer_drv.amp_balance.checked_add(buy_amount_points).ok_or(ProgramError::InvalidArgument)?;
+    buyer_drv.serialize(&mut *buyer_driver_acc.data.borrow_mut())?;
 
-//     // reduce listing remaining
-//     listing.amount_remaining = listing.amount_remaining.checked_sub(buy_amount_points).ok_or(ProgramError::InvalidArgument)?;
-//     listing.serialize(&mut *listing_acc.data.borrow_mut())?;
-//     msg!("Buyer purchased {} points", buy_amount_points);
-//     Ok(())
-// }
+    // reduce listing remaining
+    listing.amount_remaining = listing.amount_remaining.checked_sub(buy_amount_points).ok_or(ProgramError::InvalidArgument)?;
+    listing.serialize(&mut *listing_acc.data.borrow_mut())?;
+    msg!("Buyer purchased {} points", buy_amount_points);
+    Ok(())
+}
 
-// fn instruction_cancel_listing(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
-//     let account_info_iter = &mut accounts.iter();
-//     let seller = next_account_info(account_info_iter)?; // signer
-//     let seller_driver_acc = next_account_info(account_info_iter)?; // writable
-//     let listing_acc = next_account_info(account_info_iter)?; // writable
+fn instruction_cancel_listing(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
+    let account_info_iter = &mut accounts.iter();
+    let seller = next_account_info(account_info_iter)?; // signer
+    let seller_driver_acc = next_account_info(account_info_iter)?; // writable
+    let listing_acc = next_account_info(account_info_iter)?; // writable
 
-//     if !seller.is_signer {
-//         msg!("Seller must sign");
-//         return Err(ProgramError::MissingRequiredSignature);
-//     }
+    if !seller.is_signer {
+        msg!("Seller must sign");
+        return Err(ProgramError::MissingRequiredSignature);
+    }
 
-//     let mut listing = ListingAccount::try_from_slice(&listing_acc.data.borrow()).map_err(|_| ProgramError::UninitializedAccount)?;
-//     if listing.seller != *seller.key {
-//         msg!("Only listing seller can cancel");
-//         return Err(ProgramError::IllegalOwner);
-//     }
+    let mut listing = ListingAccount::try_from_slice(&listing_acc.data.borrow()).map_err(|_| ProgramError::UninitializedAccount)?;
+    if listing.seller != *seller.key {
+        msg!("Only listing seller can cancel");
+        return Err(ProgramError::IllegalOwner);
+    }
 
-//     let remaining = listing.amount_remaining;
-//     if remaining > 0 {
-//         // return remaining points to seller driver account
-//         let mut drv = DriverAccount::try_from_slice(&seller_driver_acc.data.borrow()).unwrap_or(DriverAccount {
-//             is_initialized: true,
-//             owner: *seller.key,
-//             amp_balance: 0,
-//         });
-//         if drv.owner != *seller.key && drv.owner != Pubkey::default() {
-//             msg!("Seller driver owner mismatch");
-//             return Err(ProgramError::IllegalOwner);
-//         }
-//         drv.amp_balance = drv.amp_balance.checked_add(remaining).ok_or(ProgramError::InvalidArgument)?;
-//         drv.serialize(&mut *seller_driver_acc.data.borrow_mut())?;
-//     }
+    let remaining = listing.amount_remaining;
+    if remaining > 0 {
+        // return remaining points to seller driver account
+        let mut drv = DriverAccount::try_from_slice(&seller_driver_acc.data.borrow()).unwrap_or(DriverAccount {
+            is_initialized: true,
+            owner: *seller.key,
+            amp_balance: 0,
+        });
+        if drv.owner != *seller.key && drv.owner != Pubkey::default() {
+            msg!("Seller driver owner mismatch");
+            return Err(ProgramError::IllegalOwner);
+        }
+        drv.amp_balance = drv.amp_balance.checked_add(remaining).ok_or(ProgramError::InvalidArgument)?;
+        drv.serialize(&mut *seller_driver_acc.data.borrow_mut())?;
+    }
 
-//     // zero out listing
-//     listing.amount_remaining = 0;
-//     listing.serialize(&mut *listing_acc.data.borrow_mut())?;
-//     msg!("Listing canceled, returned {} points", remaining);
-//     Ok(())
-// }
+    // zero out listing
+    listing.amount_remaining = 0;
+    listing.serialize(&mut *listing_acc.data.borrow_mut())?;
+    msg!("Listing canceled, returned {} points", remaining);
+    Ok(())
+}
