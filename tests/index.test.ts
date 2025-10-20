@@ -70,6 +70,15 @@ let listingSchema:borsh.Schema={
     }
 };
 
+let buyListingIxSchema:borsh.Schema={
+    struct:{buy_points:'u64'}
+};
+let userSchema:borsh.Schema={
+    struct:{
+        amp_balance: 'u64',
+    }
+}
+
 describe("Charge2Earn tests",()=>{
     let connection:Connection;
     let user:Keypair;
@@ -88,7 +97,7 @@ describe("Charge2Earn tests",()=>{
         user=Keypair.fromSecretKey(Uint8Array.from([48,182,182,234,169,224,236,113,52,199,47,66,39,2,163,52,183,44,45,27,127,49,133,151,64,70,248,16,46,218,234,198,42,180,5,68,243,235,189,56,197,37,17,85,205,189,100,191,64,74,171,3,37,193,199,195,213,54,156,198,228,15,248,188]));
         energyProgram=new PublicKey("E4pyU4z4hM7XPGVPgJdx8tbfnMWmLzXH8ahtvvuXmiBW");
 
-        chargerCode="xyz28";
+        chargerCode="xyz35";
         [chargerPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("charger"), Buffer.from(chargerCode), user.publicKey.toBuffer()],energyProgram);
         console.log("charger pda : ",chargerPda.toBase58());
         
@@ -259,6 +268,72 @@ describe("Charge2Earn tests",()=>{
 
         let driverData=await connection.getAccountInfo(driverPda);
         let deserialisedDriverData=borsh.deserialize(driverSchema,driverData?.data);
+        console.log('deserialisedDriverData : ',deserialisedDriverData);
+    })
+    ,
+    test("buy listing",async()=>{
+        let [listingPda,bump1]=PublicKey.findProgramAddressSync([Buffer.from("listing"),user.publicKey.toBuffer()],energyProgram);
+        let [userPda,bump2]=PublicKey.findProgramAddressSync([Buffer.from("user"),user.publicKey.toBuffer()],energyProgram);
+        
+        let serialisedBuyListingData=borsh.serialize(buyListingIxSchema,{buy_points: 135})
+        let ix=new TransactionInstruction({
+            programId:energyProgram,
+            keys:[
+                {pubkey:user.publicKey, isSigner:true, isWritable:false},
+                {pubkey:userPda, isSigner:false, isWritable:true},
+                {pubkey:listingPda, isSigner:false, isWritable:true},
+                {pubkey:driverPda, isSigner:false, isWritable:true},
+                {pubkey:SystemProgram.programId, isSigner:false, isWritable:false}
+            ],
+            data:Buffer.concat([Buffer.from([5]), serialisedBuyListingData])
+        });
+        let tx=new Transaction().add(ix);
+        tx.recentBlockhash=(await connection.getLatestBlockhash()).blockhash;
+        tx.sign(user);
+        let txStatus=await connection.sendRawTransaction(tx.serialize());
+        await connection.confirmTransaction(txStatus,"finalized");
+        console.log("buy listing tx : ",txStatus);
+        
+        
+        let listingData=await connection.getAccountInfo(listingPda);
+        let deserialisedListingData=borsh.deserialize(listingSchema,listingData?.data);
+        console.log('deserialisedListingData : ',deserialisedListingData);
+
+        let userPdaData=await connection.getAccountInfo(userPda);
+        let deserialisedUserData=borsh.deserialize(userSchema,userPdaData?.data);
+        console.log('deserialisedUserData : ',deserialisedUserData);
+    })
+    ,
+    test("cancel listing",async()=>{
+        let [listingPda,bump1]=PublicKey.findProgramAddressSync([Buffer.from("listing"),user.publicKey.toBuffer()],energyProgram);
+        // let [userPda,bump2]=PublicKey.findProgramAddressSync([Buffer.from("user"),user.publicKey.toBuffer()],energyProgram);
+        
+        // let serialisedBuyListingData=borsh.serialize(buyListingIxSchema,{buy_points: 135})
+        let ix=new TransactionInstruction({
+            programId:energyProgram,
+            keys:[
+                {pubkey:user.publicKey, isSigner:true, isWritable:false},
+                // {pubkey:userPda, isSigner:false, isWritable:true},
+                {pubkey:driverPda, isSigner:false, isWritable:true},
+                {pubkey:listingPda, isSigner:false, isWritable:true},
+                // {pubkey:SystemProgram.programId, isSigner:false, isWritable:false}
+            ],
+            data:Buffer.from([6])
+        });
+        let tx=new Transaction().add(ix);
+        tx.recentBlockhash=(await connection.getLatestBlockhash()).blockhash;
+        tx.sign(user);
+        let txStatus=await connection.sendRawTransaction(tx.serialize());
+        await connection.confirmTransaction(txStatus,"finalized");
+        console.log("cancel listing tx : ",txStatus);
+        
+        
+        let listingData=await connection.getAccountInfo(listingPda);
+        let deserialisedListingData=borsh.deserialize(listingSchema,listingData?.data);
+        console.log('deserialisedListingData : ',deserialisedListingData);
+
+        let driverPdaData=await connection.getAccountInfo(driverPda);
+        let deserialisedDriverData=borsh.deserialize(driverSchema,driverPdaData?.data);
         console.log('deserialisedDriverData : ',deserialisedDriverData);
     })
 
