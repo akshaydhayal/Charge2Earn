@@ -1,4 +1,4 @@
-import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js";
+import { Connection, PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 import * as borsh from "borsh";
 import { PROGRAM_ID } from "./config";
 
@@ -27,17 +27,129 @@ const createListingIxSchema: borsh.Schema = {
 
 const buyListingIxSchema: borsh.Schema = { struct: { buy_points: "u64" } };
 
+const chargerAccountSchema: borsh.Schema = {
+  struct: {
+    account_type: "u8",
+    is_initialized: "bool",
+    authority: { array: { type: "u8", len: 32 } },
+    code: "string",
+    name: "string",
+    city: "string",
+    address: "string",
+    latitude: "f64",
+    longitude: "f64",
+    power_kw: "f32",
+    rate_points_per_sec: "u64",
+    price_per_sec_lamports: "u64",
+  },
+};
+
+export type ChargerAccount = {
+  account_type: number;
+  is_initialized: boolean;
+  authority: Uint8Array; // 32
+  code: string;
+  name: string;
+  city: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  power_kw: number;
+  rate_points_per_sec: bigint;
+  price_per_sec_lamports: bigint;
+};
+
+export async function fetchChargers(connection: Connection) {
+  const accounts = await connection.getProgramAccounts(PROGRAM_PUBKEY);
+  const items: Array<{ pubkey: PublicKey; data: ChargerAccount }> = [];
+  for (const acc of accounts) {
+    try {
+      const data = borsh.deserialize(chargerAccountSchema, acc.account.data) as ChargerAccount;
+      if (data && data.is_initialized && data.account_type === 1) {
+        items.push({ pubkey: acc.pubkey, data });
+      }
+    } catch {
+      // not a charger account; skip
+    }
+  }
+  return items;
+}
+
+const listingAccountSchema: borsh.Schema = {
+  struct: {
+    account_type: "u8",
+    is_initialized: "bool",
+    seller: { array: { type: "u8", len: 32 } },
+    amount_total: "u64",
+    price_per_point_lamports: "u64",
+  },
+};
+
+export type ListingAccount = {
+  account_type: number;
+  is_initialized: boolean;
+  seller: Uint8Array;
+  amount_total: bigint;
+  price_per_point_lamports: bigint;
+};
+
+export async function fetchListings(connection: Connection) {
+  // ListingAccount has fixed size: 49 bytes; filter client-side to avoid RPC quirks
+  const accounts = await connection.getProgramAccounts(PROGRAM_PUBKEY);
+  const items: Array<{ pubkey: PublicKey; data: ListingAccount }> = [];
+  for (const acc of accounts) {
+    try {
+      // new layout adds 1-byte account_type at the beginning; minimum size now 50 bytes
+      if (acc.account.data.length < 50) continue;
+      const buf = acc.account.data.subarray(0, 50);
+      const data = borsh.deserialize(listingAccountSchema, buf) as ListingAccount;
+      if (data && data.account_type === 4 && data.is_initialized && data.amount_total > BigInt(0)) {
+        items.push({ pubkey: acc.pubkey, data });
+      }
+    } catch {
+      // not a listing account; skip
+    }
+  }
+  return items;
+}
+
+const driverAccountSchema: borsh.Schema = {
+  struct: {
+    account_type: "u8",
+    is_initialized: "bool",
+    owner: { array: { type: "u8", len: 32 } },
+    amp_balance: "u64",
+  },
+};
+
+export type DriverAccount = {
+  account_type: number;
+  is_initialized: boolean;
+  owner: Uint8Array;
+  amp_balance: bigint;
+};
+
+export async function fetchDriver(connection: Connection, driverPda: PublicKey): Promise<DriverAccount | null> {
+  const info = await connection.getAccountInfo(driverPda);
+  if (!info?.data) return null;
+  try {
+    return borsh.deserialize(driverAccountSchema, info.data) as DriverAccount;
+  } catch {
+    return null;
+  }
+}
+
 // ----- PDA helpers -----
 export function findChargerPda(code: string, owner: PublicKey) {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("charger"), Buffer.from(code), owner.toBuffer()],
+    [Buffer.from("charger1"), Buffer.from(code), owner.toBuffer()],
     PROGRAM_PUBKEY
   );
 }
 
 export function findDriverPda(owner: PublicKey) {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("driver"), owner.toBuffer()],
+    [Buffer.from("driver1"), owner.toBuffer()],
     PROGRAM_PUBKEY
   );
 }
@@ -45,21 +157,21 @@ export function findDriverPda(owner: PublicKey) {
 export function findSessionPda(chargerPda: PublicKey, driverPda: PublicKey, startTs: number) {
   const serialized = borsh.serialize(sessionIxSchema, { time: BigInt(startTs) });
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("session"), chargerPda.toBuffer(), driverPda.toBuffer(), Buffer.from(serialized)],
+    [Buffer.from("session1"), chargerPda.toBuffer(), driverPda.toBuffer(), Buffer.from(serialized)],
     PROGRAM_PUBKEY
   );
 }
 
 export function findListingPda(seller: PublicKey) {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("listing"), seller.toBuffer()],
+    [Buffer.from("listing1"), seller.toBuffer()],
     PROGRAM_PUBKEY
   );
 }
 
 export function findUserPda(user: PublicKey) {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("user"), user.toBuffer()],
+    [Buffer.from("user1"), user.toBuffer()],
     PROGRAM_PUBKEY
   );
 }

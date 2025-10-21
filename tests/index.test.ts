@@ -19,6 +19,7 @@ let chargerAddSchema:borsh.Schema={
 }
 let chargerSchema:borsh.Schema={
     struct:{
+        accountType: 'u8',
         is_initialized: 'bool',
         authority: {array:{type:'u8',len:32}}, 
         code: 'string',
@@ -38,6 +39,7 @@ let sessionIxSchema:borsh.Schema={
 
 let sessionSchema:borsh.Schema={
     struct:{
+        accountType: 'u8',
         is_initialized: 'bool',
         driver: {array:{type:'u8',len:32}},
         charger: {array:{type:'u8',len:32}},
@@ -49,6 +51,7 @@ let sessionSchema:borsh.Schema={
 }
 let driverSchema:borsh.Schema={
     struct:{
+        accountType: 'u8',
         is_initialized: 'bool',
         owner: {array:{type:'u8',len:32}},
         amp_balance: 'u64',
@@ -63,6 +66,7 @@ let createListingIxSchema:borsh.Schema={
 };
 let listingSchema:borsh.Schema={
     struct:{
+        accountType: 'u8',
         is_initialized: 'bool',
         seller: {array:{type:'u8',len:32}},
         amount_total: 'u64',
@@ -75,6 +79,7 @@ let buyListingIxSchema:borsh.Schema={
 };
 let userSchema:borsh.Schema={
     struct:{
+        accountType: 'u8',
         amp_balance: 'u64',
     }
 }
@@ -95,13 +100,13 @@ describe("Charge2Earn tests",()=>{
     beforeAll(()=>{
         connection=new Connection(clusterApiUrl("devnet"));
         user=Keypair.fromSecretKey(Uint8Array.from([48,182,182,234,169,224,236,113,52,199,47,66,39,2,163,52,183,44,45,27,127,49,133,151,64,70,248,16,46,218,234,198,42,180,5,68,243,235,189,56,197,37,17,85,205,189,100,191,64,74,171,3,37,193,199,195,213,54,156,198,228,15,248,188]));
-        energyProgram=new PublicKey("E4pyU4z4hM7XPGVPgJdx8tbfnMWmLzXH8ahtvvuXmiBW");
+        energyProgram=new PublicKey("9kH9wQbeFXKr1FQ9jcQv51F5wn2XP9D2MVx7CFa72mfr");
 
-        chargerCode="xyz36";
-        [chargerPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("charger"), Buffer.from(chargerCode), user.publicKey.toBuffer()],energyProgram);
+        chargerCode="xyz40";
+        [chargerPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("charger1"), Buffer.from(chargerCode), user.publicKey.toBuffer()],energyProgram);
         console.log("charger pda : ",chargerPda.toBase58());
         
-        [driverPda, bump]=PublicKey.findProgramAddressSync([Buffer.from("driver"),user.publicKey.toBuffer()],energyProgram);
+        [driverPda, bump]=PublicKey.findProgramAddressSync([Buffer.from("driver1"),user.publicKey.toBuffer()],energyProgram);
         console.log("driver  pda : ",driverPda.toBase58());
         
         start_ts=123;
@@ -109,7 +114,7 @@ describe("Charge2Earn tests",()=>{
         let serialised_start_ts=borsh.serialize(sessionIxSchema,{time:start_ts})
         console.log('serialised_start_ts : ',serialised_start_ts);
         
-        [sessionPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("session"),chargerPda.toBuffer(), driverPda.toBuffer(), serialised_start_ts],energyProgram);
+        [sessionPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("session1"),chargerPda.toBuffer(), driverPda.toBuffer(), serialised_start_ts],energyProgram);
         console.log("session pda : ",sessionPda.toBase58());
     }),
     
@@ -209,7 +214,7 @@ describe("Charge2Earn tests",()=>{
     })
     ,
     test("create listing",async()=>{
-        let [listingPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("listing"),user.publicKey.toBuffer()],energyProgram);
+        let [listingPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("listing1"),user.publicKey.toBuffer()],energyProgram);
         
         let serialisedListingData=borsh.serialize(createListingIxSchema,{amount_points: 145, price_per_point_lamports: 45})
         let ix=new TransactionInstruction({
@@ -240,7 +245,7 @@ describe("Charge2Earn tests",()=>{
     })
     ,
     test("create second listing",async()=>{
-        let [listingPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("listing"),user.publicKey.toBuffer()],energyProgram);
+        let [listingPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("listing1"),user.publicKey.toBuffer()],energyProgram);
         
         let serialisedListingData=borsh.serialize(createListingIxSchema,{amount_points: 175, price_per_point_lamports: 30})
         let ix=new TransactionInstruction({
@@ -271,8 +276,9 @@ describe("Charge2Earn tests",()=>{
     })
     ,
     test("buy listing",async()=>{
-        let [listingPda,bump1]=PublicKey.findProgramAddressSync([Buffer.from("listing"),user.publicKey.toBuffer()],energyProgram);
-        let [userPda,bump2]=PublicKey.findProgramAddressSync([Buffer.from("user"),user.publicKey.toBuffer()],energyProgram);
+        let [listingPda,bump1]=PublicKey.findProgramAddressSync([Buffer.from("listing1"),user.publicKey.toBuffer()],energyProgram);
+        let [userPda,bump2]=PublicKey.findProgramAddressSync([Buffer.from("user1"),user.publicKey.toBuffer()],energyProgram);
+        console.log("user pda : ",userPda.toBase58());
         
         let serialisedBuyListingData=borsh.serialize(buyListingIxSchema,{buy_points: 135})
         let ix=new TransactionInstruction({
@@ -304,7 +310,7 @@ describe("Charge2Earn tests",()=>{
     })
     ,
     test("cancel listing",async()=>{
-        let [listingPda,bump1]=PublicKey.findProgramAddressSync([Buffer.from("listing"),user.publicKey.toBuffer()],energyProgram);
+        let [listingPda,bump1]=PublicKey.findProgramAddressSync([Buffer.from("listing1"),user.publicKey.toBuffer()],energyProgram);
         
         let ix=new TransactionInstruction({
             programId:energyProgram,
@@ -329,6 +335,12 @@ describe("Charge2Earn tests",()=>{
         let driverPdaData=await connection.getAccountInfo(driverPda);
         let deserialisedDriverData=borsh.deserialize(driverSchema,driverPdaData?.data);
         console.log('deserialisedDriverData : ',deserialisedDriverData);
+    }),
+    
+    test("get ac info",async()=>{
+            let driverPdaData=await connection.getAccountInfo(driverPda);
+            let deserialisedDriverData=borsh.deserialize(driverSchema,driverPdaData?.data);
+            console.log('deserialisedDriverData : ',deserialisedDriverData);
     })
 
 })

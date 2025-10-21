@@ -24,11 +24,11 @@ const REG_FEE_LAMPORTS: u64 = LAMPORTS_PER_SOL / 2; // 0.5 SOL
 
 // PDA seeds:
 const STATE_SEED: &[u8] = b"charge2earn_state";
-const CHARGER_SEED: &[u8] = b"charger"; // + charger_code (bytes)
-const DRIVER_SEED: &[u8] = b"driver"; // + driver_pubkey
-const SESSION_SEED: &[u8] = b"session"; // + charger_pubkey + driver_pubkey + start_ts
-const LISTING_SEED: &[u8] = b"listing"; // + seller_pubkey + nonce
-const USER_SEED: &[u8] = b"user"; // + user_pubkey 
+const CHARGER_SEED: &[u8] = b"charger1"; // + charger_code (bytes) + charger_pubkey
+const DRIVER_SEED: &[u8] = b"driver1"; // + driver_pubkey
+const SESSION_SEED: &[u8] = b"session1"; // + charger_pubkey + driver_pubkey + start_ts
+const LISTING_SEED: &[u8] = b"listing1"; // + seller_pubkey 
+const USER_SEED: &[u8] = b"user1"; // + user_pubkey 
 
 // ----- Instructions -----
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
@@ -58,6 +58,7 @@ pub enum Instruction {
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct ChargerAccount {
+    pub accountType:u8,      //1
     pub is_initialized: bool,
     pub authority: Pubkey, // owner/operator
     pub code: String,
@@ -73,6 +74,7 @@ pub struct ChargerAccount {
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct DriverAccount {
+    pub accountType:u8,     //2
     pub is_initialized: bool,
     pub owner: Pubkey,
     pub amp_balance: u64,
@@ -80,6 +82,7 @@ pub struct DriverAccount {
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct UserAccount {
+    pub accountType:u8,           //5
     // pub is_initialized: bool,
     // pub owner: Pubkey,
     pub amp_balance: u64,
@@ -87,6 +90,7 @@ pub struct UserAccount {
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct SessionAccount {
+    pub accountType:u8,        //3
     pub is_initialized: bool,
     pub driver: Pubkey,
     pub charger: Pubkey,
@@ -98,6 +102,7 @@ pub struct SessionAccount {
 
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct ListingAccount {
+    pub accountType:u8,         //4
     pub is_initialized: bool,
     pub seller: Pubkey,
     pub amount_total: u64,
@@ -144,14 +149,14 @@ fn instruction_add_charger(program_id: &Pubkey,accounts: &[AccountInfo],code: St
         return Err(ProgramError::MissingRequiredSignature);
     }
     msg!("code : {} , address : {}",code,address);
-    let seeds=&[b"charger",code.as_bytes().as_ref(), payer.key.as_ref()];
+    let seeds=&[CHARGER_SEED,code.as_bytes().as_ref(), payer.key.as_ref()];
     let (expected_charger_pda_account,bump)=Pubkey::find_program_address(seeds, program_id);
-    let seeds_with_bump=&[b"charger", code.as_bytes(), payer.key.as_ref(), &[bump]];
+    let seeds_with_bump=&[CHARGER_SEED, code.as_bytes(), payer.key.as_ref(), &[bump]];
     if expected_charger_pda_account!=*charger_pda.key{
         return  Err(ProgramError::InvalidSeeds);
     }
     let rent=Rent::get()?;
-    let charger_account_size:usize=1+ 32+
+    let charger_account_size:usize=1+ 1+ 32+
                                    4+ code.len() + 4+ name.len() + 4+ city.len() + 4+ address.len()+
                                    8+ 8+ 4+ 8+ 8;
     let charger_min_bal_for_rent_exempt=rent.minimum_balance(charger_account_size);
@@ -176,7 +181,7 @@ fn instruction_add_charger(program_id: &Pubkey,accounts: &[AccountInfo],code: St
     // For clarity, please ensure the client includes state.admin account as writable in the account list.
 
     // Populate charger account
-    let mut charger = ChargerAccount { is_initialized: true, authority: *payer.key,
+    let mut charger = ChargerAccount {accountType:1, is_initialized: true, authority: *payer.key,
         code, name, city, address, latitude, longitude, power_kw, rate_points_per_sec, price_per_sec_lamports,
     };
     charger.serialize(&mut *charger_pda.data.borrow_mut())?;
@@ -195,10 +200,10 @@ fn instruction_start_session(program_id: &Pubkey, accounts: &[AccountInfo], star
 
     msg!("start ts in contract : {}",start_ts);
 
-    let driver_seeds=&[b"driver",user.key.as_ref()];
+    let driver_seeds=&[DRIVER_SEED, user.key.as_ref()];
     let (expected_driver_pda,bump)=Pubkey::find_program_address(driver_seeds, program_id);
     msg!("expected_driver_pda : {}",expected_driver_pda);
-    let driver_seeds_with_bump=&[b"driver",user.key.as_ref(),&[bump]];
+    let driver_seeds_with_bump=&[DRIVER_SEED, user.key.as_ref(),&[bump]];
     if expected_driver_pda!=*driver_pda.key{
         return Err(ProgramError::InvalidSeeds);
     }
@@ -206,7 +211,7 @@ fn instruction_start_session(program_id: &Pubkey, accounts: &[AccountInfo], star
     //Create driver account if it does not exists
     if driver_pda.data_is_empty(){
         let rent=Rent::get()?;
-        let driver_pda_account_size:usize=1+ 32+ 8;
+        let driver_pda_account_size:usize=1+ 1+ 32+ 8;
         let driver_pda_rent_exempt_bal=rent.minimum_balance(driver_pda_account_size);
         let driver_pda_create_ix=system_instruction::create_account(user.key,
             driver_pda.key, driver_pda_rent_exempt_bal, driver_pda_account_size as u64, program_id);
@@ -214,24 +219,24 @@ fn instruction_start_session(program_id: &Pubkey, accounts: &[AccountInfo], star
             &[user.clone(), driver_pda.clone()],
             &[driver_seeds_with_bump])?;
             msg!("driver pda created");
-    }
 
-    let driver_data=DriverAccount{owner:*user.key, is_initialized:true, amp_balance:0};
-    driver_data.serialize(&mut *driver_pda.data.borrow_mut())?;
-    msg!("driver pda data updated"); 
+        let driver_data=DriverAccount{accountType:2, owner:*user.key, is_initialized:true, amp_balance:0};
+        driver_data.serialize(&mut *driver_pda.data.borrow_mut())?;
+        msg!("driver pda data updated"); 
+    }
 
     //Create Session account if it does not exists
     let start_ts_bytes=start_ts.to_le_bytes();
-    let session_seeds=&[b"session",charger_pda.key.as_ref(), driver_pda.key.as_ref(),start_ts_bytes.as_ref()];
+    let session_seeds=&[SESSION_SEED, charger_pda.key.as_ref(), driver_pda.key.as_ref(),start_ts_bytes.as_ref()];
     let (expected_session_pda,bump)=Pubkey::find_program_address(session_seeds, program_id);
     msg!("expected_session_pda : {}",expected_session_pda);
-    let session_seeds_with_bump=&[b"session",charger_pda.key.as_ref(), driver_pda.key.as_ref(),start_ts_bytes.as_ref(),&[bump]];
+    let session_seeds_with_bump=&[SESSION_SEED, charger_pda.key.as_ref(), driver_pda.key.as_ref(),start_ts_bytes.as_ref(),&[bump]];
     if expected_session_pda!=*session_pda.key{
         return Err(ProgramError::InvalidSeeds);
     }
     
     let rent=Rent::get()?;
-    let session_pda_account_size:usize=1+ 32+ 32+ 8+ 8+ 8+ 1;
+    let session_pda_account_size:usize=1+ 1+ 32+ 32+ 8+ 8+ 8+ 1;
     let session_pda_rent_exempt_bal=rent.minimum_balance(session_pda_account_size);
     let session_pda_create_ix=system_instruction::create_account(user.key,
         session_pda.key, session_pda_rent_exempt_bal, session_pda_account_size as u64, program_id);
@@ -248,7 +253,7 @@ fn instruction_start_session(program_id: &Pubkey, accounts: &[AccountInfo], star
     }
 
     // Create session record
-    let session = SessionAccount {is_initialized: true, driver: *driver_pda.key,
+    let session = SessionAccount {accountType:3, is_initialized: true, driver: *driver_pda.key,
         charger: *charger_pda.key, start_ts, end_ts: 0, points_awarded: 0, settled: false,
     };
     session.serialize(&mut *session_pda.data.borrow_mut())?;
@@ -366,14 +371,14 @@ fn instruction_create_listing(program_id: &Pubkey, accounts: &[AccountInfo], amo
 
 
     if listing_pda.data_is_empty(){
-        let listing_seeds=&[b"listing", user.key.as_ref()];
+        let listing_seeds=&[LISTING_SEED, user.key.as_ref()];
         let (expected_listing_pda_account,bump)=Pubkey::find_program_address(listing_seeds, program_id);
-        let listing_seeds_with_bump=&[b"listing", user.key.as_ref(), &[bump]];
+        let listing_seeds_with_bump=&[LISTING_SEED, user.key.as_ref(), &[bump]];
         if expected_listing_pda_account!=*listing_pda.key{
             return  Err(ProgramError::InvalidSeeds);
         }
         let rent=Rent::get()?;
-        let listing_account_size:usize=1+ 32+ 8+ 8;
+        let listing_account_size:usize=1+ 1+ 32+ 8+ 8;
         let listing_min_bal_for_rent_exempt=rent.minimum_balance(listing_account_size);
         let listing_pda_create_ix=system_instruction::create_account(user.key,
             listing_pda.key, listing_min_bal_for_rent_exempt, listing_account_size as u64, program_id);
@@ -384,6 +389,7 @@ fn instruction_create_listing(program_id: &Pubkey, accounts: &[AccountInfo], amo
         msg!("listing pda created!!");
 
         let listing = ListingAccount {
+            accountType:4,
             is_initialized: true,
             seller: *user.key,
             amount_total: amount_points,
@@ -443,30 +449,38 @@ fn instruction_buy_from_listing(program_id: &Pubkey, accounts: &[AccountInfo], b
     )?;
 
     // credit points to buyer driver account
-    let user_seeds=&[b"user", user.key.as_ref()];
+    let user_seeds=&[USER_SEED, user.key.as_ref()];
     let (expected_user_pda_account,bump)=Pubkey::find_program_address(user_seeds, program_id);
-    let user_seeds_with_bump=&[b"user", user.key.as_ref(), &[bump]];
+    let user_seeds_with_bump=&[USER_SEED, user.key.as_ref(), &[bump]];
     if expected_user_pda_account!=*user_pda.key{
         return  Err(ProgramError::InvalidSeeds);
     }
-
+    msg!("a");
     if user_pda.data_is_empty(){
         let rent=Rent::get()?;
-        let user_account_size:usize=8;
+        let user_account_size:usize=1+ 8;
         let user_min_bal_for_rent_exempt=rent.minimum_balance(user_account_size);
-        let listing_pda_create_ix=system_instruction::create_account(user.key,
+        let user_pda_create_ix=system_instruction::create_account(user.key,
             user_pda.key, user_min_bal_for_rent_exempt, user_account_size as u64, program_id);
-            invoke_signed(&listing_pda_create_ix,
+        invoke_signed(&user_pda_create_ix,
             &[user.clone(), user_pda.clone()],
             &[user_seeds_with_bump])?;
         msg!("user pda created!!");
+
+        // let user_acc = UserAccount {accountType:5,amp_balance:0};
+        // user_acc.serialize(&mut *user_pda.data.borrow_mut())?;
     }
     let mut buyer_user = UserAccount::try_from_slice(&user_pda.data.borrow())?;
+    msg!("b");
     buyer_user.amp_balance = buyer_user.amp_balance.checked_add(buy_amount_points).ok_or(ProgramError::InvalidArgument)?;
+    buyer_user.accountType=5;
+    msg!("c");
     buyer_user.serialize(&mut *user_pda.data.borrow_mut())?;
-
+    msg!("d");
+    
     // reduce listing remaining
     listing.amount_total = listing.amount_total.checked_sub(buy_amount_points).ok_or(ProgramError::InvalidArgument)?;
+    msg!("e");
     listing.serialize(&mut *listing_pda.data.borrow_mut())?;
     msg!("Buyer purchased {} points", buy_amount_points);
     Ok(())

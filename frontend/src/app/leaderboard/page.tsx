@@ -6,10 +6,9 @@ import { useConnection } from "@solana/wallet-adapter-react";
 import { PROGRAM_PUBKEY } from "@/lib/program";
 import { PublicKey } from "@solana/web3.js";
 
-// Simple leaderboard by scanning user PDAs of type `user` and `driver` prefix
-// This is a demo scanner; in a real app you'd index off-chain
+// Simple leaderboard for driver PDAs only
 
-type Row = { type: "driver" | "user"; pubkey: string; amp: bigint };
+type Row = { type: "driver"; pubkey: string; amp: bigint };
 
 export default function LeaderboardPage() {
   const { connection } = useConnection();
@@ -22,26 +21,19 @@ export default function LeaderboardPage() {
       try {
         setLoading(true);
         const program = PROGRAM_PUBKEY;
-        const driverSeed = Buffer.from("driver");
-        const userSeed = Buffer.from("user");
-        const accounts = await connection.getProgramAccounts(program, { dataSlice: { offset: 0, length: 0 } });
+        const accounts = await connection.getProgramAccounts(program);
         const candidatePubkeys: PublicKey[] = accounts.map(a => a.pubkey);
         const fetched = await Promise.all(
           candidatePubkeys.map(async pk => {
             const info = await connection.getAccountInfo(pk);
             if (!info?.data) return null;
-            // very rough heuristic: parse last 8 bytes as amp if size matches expected minimal structures
-            if (info.data.length === 8) {
-              const dv = new DataView(info.data.buffer, info.data.byteOffset, info.data.byteLength);
-              const amp = dv.getBigUint64(0, true);
-              return { type: "user" as const, pubkey: pk.toBase58(), amp } satisfies Row;
-            }
-            if (info.data.length >= 1 + 32 + 8) {
-              // driver account
-              const amp = new DataView(info.data.buffer, info.data.byteOffset + 1 + 32, 8).getBigUint64(0, true);
-              return { type: "driver" as const, pubkey: pk.toBase58(), amp } satisfies Row;
-            }
-            return null;
+            // account_type (byte 0) must be 2 (driver)
+            const accountType = new DataView(info.data.buffer, info.data.byteOffset, 1).getUint8(0);
+            if (accountType !== 2) return null;
+            // layout: [account_type:1][is_initialized:1][owner:32][amp_balance:8]...
+            if (info.data.length < 1 + 1 + 32 + 8) return null;
+            const amp = new DataView(info.data.buffer, info.data.byteOffset + 1 + 1 + 32, 8).getBigUint64(0, true);
+            return { type: "driver" as const, pubkey: pk.toBase58(), amp } satisfies Row;
           })
         );
         const filtered = (fetched.filter(Boolean) as Row[]).sort((a, b) => Number(b.amp - a.amp)).slice(0, 50);
@@ -60,7 +52,7 @@ export default function LeaderboardPage() {
       <Nav />
       <div className="mx-auto max-w-5xl px-4 py-10">
         <h1 className="text-2xl font-semibold">Leaderboard</h1>
-        <p className="text-gray-600 mt-2">Top AMP balances across drivers and users (best-effort scan).</p>
+        <p className="text-gray-600 mt-2">Top AMP balances across drivers (filtered by account_type=2).</p>
 
         <div className="mt-6 overflow-x-auto">
           <table className="w-full text-sm">
