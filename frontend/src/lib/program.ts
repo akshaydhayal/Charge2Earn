@@ -75,6 +75,18 @@ export async function fetchChargers(connection: Connection) {
   return items;
 }
 
+export async function fetchChargerByPda(connection: Connection, chargerPda: PublicKey): Promise<ChargerAccount | null> {
+  const info = await connection.getAccountInfo(chargerPda);
+  if (!info?.data) return null;
+  try {
+    const data = borsh.deserialize(chargerAccountSchema, info.data) as ChargerAccount;
+    if (data.account_type !== 1 || !data.is_initialized) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 const listingAccountSchema: borsh.Schema = {
   struct: {
     account_type: "u8",
@@ -251,8 +263,8 @@ export function ixStopSession(params: {
       { pubkey: params.user, isSigner: true, isWritable: false },
       { pubkey: params.sessionPda, isSigner: false, isWritable: true },
       { pubkey: params.driverPda, isSigner: false, isWritable: true },
-      { pubkey: params.chargerPda, isSigner: false, isWritable: false },
-      { pubkey: params.chargerOwner, isSigner: false, isWritable: false },
+      { pubkey: params.chargerPda, isSigner: false, isWritable: true },
+      { pubkey: params.chargerOwner, isSigner: false, isWritable: true },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
     data: Buffer.concat([Buffer.from([2]), payload]),

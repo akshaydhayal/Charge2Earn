@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Nav } from "@/components/ui/Nav";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { PROGRAM_PUBKEY } from "@/lib/program";
+import { Spinner } from "@/components/ui/Spinner";
 import { PublicKey } from "@solana/web3.js";
 
 // Simple leaderboard for driver PDAs only
@@ -51,29 +52,36 @@ export default function LeaderboardPage() {
     <div className="min-h-screen">
       <Nav />
       <div className="mx-auto max-w-5xl px-4 py-10">
-        <h1 className="text-2xl font-semibold">Leaderboard</h1>
+        <h1 className="text-2xl font-semibold">Driver's Leaderboard</h1>
         <p className="text-gray-600 mt-2">Top AMP balances across drivers (filtered by account_type=2).</p>
 
         <div className="mt-6 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left border-b">
-                <th className="py-2">Type</th>
-                <th className="py-2">Account</th>
+                <th className="py-2">Driver</th>
                 <th className="py-2">AMP</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td className="py-3" colSpan={3}>Loading...</td></tr>
+                <tr><td className="py-6" colSpan={3}><div className="flex items-center justify-center gap-3 text-sm text-gray-500"><Spinner /><span>Fetching driver accounts…</span></div></td></tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr><td className="py-3" colSpan={3}>No data found</td></tr>
               )}
               {rows.map(r => (
                 <tr key={r.pubkey} className="border-b last:border-0">
-                  <td className="py-2 capitalize">{r.type}</td>
-                  <td className="py-2 font-mono">{r.pubkey}</td>
+                  <td className="py-2">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={`https://api.dicebear.com/7.x/identicon/svg?seed=${r.pubkey}`}
+                        alt="avatar"
+                        className="w-7 h-7 rounded-full border border-white/20"
+                      />
+                      <span className="font-mono text-xs md:text-sm">{r.pubkey}</span>
+                    </div>
+                  </td>
                   <td className="py-2">{r.amp.toString()}</td>
                 </tr>
               ))}

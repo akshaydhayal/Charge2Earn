@@ -1,7 +1,10 @@
+"use client";
 import Link from "next/link";
 import { Nav } from "@/components/ui/Nav";
+import { useUIStore } from "@/lib/uiStore";
 
 export default function Home() {
+  const openAddCharger = useUIStore(s => s.openAddCharger);
   return (
     <div className="min-h-screen">
       <Nav />
@@ -12,9 +15,9 @@ export default function Home() {
             Earn AMP points automatically while charging. Support the network by buying or staking points. Real-time sessions, marketplace, and eco-leaderboards – all on Solana Devnet.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/driver" className="rounded-md bg-black text-white px-4 py-2">Start Charging</Link>
-            <Link href="/marketplace" className="rounded-md border px-4 py-2">Buy AMP Points</Link>
-            <Link href="/operator" className="rounded-md border px-4 py-2">Register Charger</Link>
+            <Link href="/driver" className="rounded-md bg-black text-white px-4 py-2">Charge Vehicle</Link>
+            <Link href="/marketplace" className="rounded-md border px-4 py-2">Points Marketplace</Link>
+            <button onClick={openAddCharger} className="rounded-md border px-4 py-2 cursor-pointer">Register Charger</button>
           </div>
         </div>
         <div className="rounded-xl border p-6 bg-white shadow-sm">
