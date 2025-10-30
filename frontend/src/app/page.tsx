@@ -15,7 +15,7 @@ export default function Home() {
             Earn AMP points automatically while charging. Support the network by buying or staking points. Real-time sessions, marketplace, and eco-leaderboards – all on Solana Devnet.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/driver" className="rounded-md bg-black text-white px-4 py-2">Charge Vehicle</Link>
+            <Link href="/chargers" className="rounded-md bg-black text-white px-4 py-2">Chargers</Link>
             <Link href="/marketplace" className="rounded-md border px-4 py-2">Points Marketplace</Link>
             <button onClick={openAddCharger} className="rounded-md border px-4 py-2 cursor-pointer">Register Charger</button>
           </div>

@@ -17,7 +17,7 @@ export function Nav() {
           ⚡ Charge2Earn
         </Link>
         <nav className="hidden md:flex gap-5 text-sm">
-          <Link href="/driver" className="hover:underline cursor-pointer">Charge Vehicle</Link>
+          <Link href="/chargers" className="hover:underline cursor-pointer">Chargers</Link>
           <Link href="/marketplace" className="hover:underline cursor-pointer">Points Marketplace</Link>
           <Link href="/leaderboard" className="hover:underline cursor-pointer">Driver's Leaderboard</Link>
         </nav>

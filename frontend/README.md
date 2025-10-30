@@ -28,7 +28,7 @@ Pages
 
 - `/` – landing + nav
 - `/operator` – register charger (pays 0.5 SOL to admin)
-- `/driver` – start/stop sessions, pay lamports per sec, earn AMP
+- `/chargers` – select charging points and start/stop sessions, pay lamports per sec, earn AMP
 - `/marketplace` – create/cancel listing, buy AMP
 - `/leaderboard` – lightweight on-chain scan for balances
 

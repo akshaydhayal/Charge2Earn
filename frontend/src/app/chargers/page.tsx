@@ -9,7 +9,7 @@ import { useUIStore } from "@/lib/uiStore";
 import Link from "next/link";
 import { Spinner } from "@/components/ui/Spinner";
 
-export default function DriverPage() {
+export default function ChargersPage() {
   const { connection } = useConnection();
 
   const [chargers, setChargers] = useState<Array<{ pubkey: PublicKey; data: ChargerAccount }>>([]);
@@ -32,7 +32,7 @@ export default function DriverPage() {
     <div className="min-h-screen">
       <Nav />
       <div className="mx-auto max-w-5xl px-4 py-10">
-        <h1 className="text-2xl font-semibold">Charge Vehicle – Select a Charging Point</h1>
+        <h1 className="text-2xl font-semibold">Chargers – Select a Charging Point</h1>
         <div className="mt-6 grid gap-4">
           {loading && (
             <div className="py-6 flex items-center justify-center gap-3 text-sm text-gray-400"><Spinner /><span>Fetching chargers…</span></div>
@@ -48,7 +48,7 @@ export default function DriverPage() {
                     <div className="text-sm text-gray-600">{c.data.address}</div>
                     <div className="mt-1 text-xs text-gray-500">Code: {c.data.code} · kW: {c.data.power_kw} · AMP/sec: {c.data.rate_points_per_sec.toString()} · Lamports/sec: {c.data.price_per_sec_lamports.toString()}</div>
                   </div>
-                  <Link href={`/driver/${owner.toBase58()}/${encodeURIComponent(c.data.code)}`} className="rounded-md bg-black text-white px-4 py-2">Charge Vehicle</Link>
+                  <Link href={`/charger/${owner.toBase58()}/${encodeURIComponent(c.data.code)}`} className="rounded-md bg-black text-white px-4 py-2">Select Charger</Link>
                 </div>
               </div>
             );
