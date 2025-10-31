@@ -1,16 +1,12 @@
 # Charge2Earn: Blockchain-Powered EV Charging Rewards Platform
-Live Project Link: [https://charge2-earn.vercel.app/](https://charge2-earn.vercel.app/)
 
 <div align="center">
 
+Live Project Link: [https://charge2-earn.vercel.app/](https://charge2-earn.vercel.app/)
+
 **Gamifying Sustainable Transportation Through Blockchain Rewards**
 
-[![Solana](https://img.shields.io/badge/Solana-140089?style=for-the-badge&logo=solana&logoColor=white)](https://solana.com/)
-[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-
-[Demo](#-demo) • [Features](#-features) • [Installation](#-installation) • [Documentation](#-documentation) • [Contributing](#-contributing)
+[Demo Video](#-demo) • [Features](#-features) • [Installation](#-installation) • [Documentation](#-documentation) 
 
 </div>
 
@@ -114,24 +110,12 @@ Live Project Link: [https://charge2-earn.vercel.app/](https://charge2-earn.verce
 - **Network**: Solana Devnet (Mainnet ready)
 - **Program ID**: `9oMQzz6sMnnSZ9sDeb5pi8gNyV568qfo4FEGR3uDsyuC`
 
-### Smart Contract
-- **Language**: Rust
-- **Framework**: Native Solana Program
-- **Key Features**:
-  - Program Derived Addresses (PDAs)
-  - Cross-program invocations
-  - Account state management
-  - Instruction serialization with Borsh
-
 ### Frontend
 - **Framework**: Next.js 14 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **State Management**: Zustand
 - **Wallet Integration**: Solana Wallet Adapter
-  - Supports: Phantom, Solflare, Coinbase Wallet, Brave, Torus
-- **UI Components**: Custom components with dark theme
-- **Deployment**: Vercel-ready
 
 ---
 
@@ -365,37 +349,7 @@ The Charge2Earn program implements the following account types:
 1. Navigate to "Driver's Leaderboard"
 2. View top 50 drivers ranked by AMP balance
 3. Your ranking highlighted if wallet is connected
-
 ---
-
-## 🧪 Testing
-
-### Contract Tests
-
-```bash
-cd tests
-npm test
-```
-
-## 🔐 Security Considerations
-
-- All transactions are on-chain and verifiable
-- Users maintain full control of their wallets
-- Smart contract uses PDAs for secure account derivation
-- No central authority or admin control over user funds
-- Registration fees go to designated admin account
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ## 🗺️ Roadmap
 
