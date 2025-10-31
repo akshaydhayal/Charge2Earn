@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Nav } from "@/components/ui/Nav";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { PROGRAM_PUBKEY } from "@/lib/program";
@@ -48,46 +49,104 @@ export default function LeaderboardPage() {
     };
   }, [connection]);
 
-  return (
-    <div className="min-h-screen">
-      <Nav />
-      <div className="mx-auto max-w-5xl px-4 py-10">
-        <h1 className="text-2xl font-semibold">Driver's Leaderboard</h1>
-        <p className="text-gray-600 mt-2">Top AMP balances across drivers</p>
+  function formatBig(n: bigint) {
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
 
-        <div className="mt-6 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left border-b">
-                <th className="py-2">Driver</th>
-                <th className="py-2">AMP</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && (
-                <tr><td className="py-6" colSpan={3}><div className="flex items-center justify-center gap-3 text-sm text-gray-500"><Spinner /><span>Fetching driver accounts…</span></div></td></tr>
-              )}
-              {!loading && rows.length === 0 && (
-                <tr><td className="py-3" colSpan={3}>No data found</td></tr>
-              )}
-              {rows.map(r => (
-                <tr key={r.pubkey} className="border-b last:border-0">
-                  <td className="py-2">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={`https://api.dicebear.com/7.x/identicon/svg?seed=${r.pubkey}`}
-                        alt="avatar"
-                        className="w-7 h-7 rounded-full border border-white/20"
-                      />
-                      <span className="font-mono text-xs md:text-sm">{r.pubkey}</span>
-                    </div>
-                  </td>
-                  <td className="py-2">{r.amp.toString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0b1220] via-[#0e1630] to-[#0b1220]">
+      <Nav />
+      <div className="mx-auto max-w-7xl px-4 py-10">
+        {/* Header */}
+        <div className="text-center mb-5">
+          <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2.5">
+            Driver&apos;s Leaderboard
+          </h1>
+          <p className="text-base text-gray-400 max-w-2xl mx-auto">
+            Top eco-drivers ranked by their AMP point balances
+          </p>
         </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="flex items-center gap-3.5 bg-white/5 backdrop-blur-xl rounded-xl px-6 py-5 border border-gray-600/20">
+              <Spinner />
+              <span className="text-white text-base">Fetching driver accounts…</span>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && rows.length === 0 && (
+          <div className="text-center py-16">
+            <div className="w-20 h-20 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-5 text-3xl">
+              🏆
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">No Drivers Found</h3>
+            <p className="text-gray-400">Start charging to appear on the leaderboard</p>
+          </div>
+        )}
+
+        {/* Leaderboard */}
+        {!loading && rows.length > 0 && (
+          <div className="space-y-3">
+            {rows.map((r, index) => {
+              const isTopThree = index < 3;
+              
+              return (
+            <div key={r.pubkey} className="group relative">
+                  {/* Card */}
+              <div className={`relative bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-xl rounded-md border border-gray-600/20 hover:border-gray-500/40 transition-all duration-300 transform group-hover:scale-105 overflow-hidden ${
+                isTopThree ? 'ring ring-gray-500/20' : ''
+              }`}>
+                <div className="p-3.5">
+                  <div className="flex items-center justify-between gap-3">
+                        {/* Rank & Driver Info */}
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-md flex items-center justify-center font-bold text-sm ${
+                            isTopThree 
+                              ? 'bg-gray-600 text-white' 
+                              : 'bg-gray-700/50 text-gray-300'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          
+                      <div className="flex items-center gap-3">
+                            <Image
+                              src={`https://api.dicebear.com/7.x/identicon/svg?seed=${r.pubkey}`}
+                              alt="avatar"
+                              width={36}
+                              height={36}
+                              className="w-9 h-9 rounded-full border border-gray-600/30"
+                              unoptimized
+                            />
+                            <div>
+                          <div className="text-white font-semibold text-xs">
+                                {isTopThree ? `🥇🥈🥉`[index] : ''} Driver #{index + 1}
+                              </div>
+                          <div className="text-gray-400 text-[11px] font-mono">
+                                {r.pubkey.slice(0, 8)}…{r.pubkey.slice(-8)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* AMP Balance */}
+                    <div className="text-right shrink-0">
+                      <div className="text-xl font-bold text-gray-200">
+                            {formatBig(r.amp)}
+                          </div>
+                      <div className="text-[11px] text-gray-400">AMP Points</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

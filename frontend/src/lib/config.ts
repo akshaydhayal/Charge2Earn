@@ -1,4 +1,4 @@
-export const PROGRAM_ID = "9kH9wQbeFXKr1FQ9jcQv51F5wn2XP9D2MVx7CFa72mfr";
+export const PROGRAM_ID = "9oMQzz6sMnnSZ9sDeb5pi8gNyV568qfo4FEGR3uDsyuC";
 
 export const CLUSTER = process.env.NEXT_PUBLIC_SOLANA_CLUSTER || "devnet";
 

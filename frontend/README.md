@@ -21,7 +21,7 @@ npm run dev
 
 Program
 
-- Program ID: `9kH9wQbeFXKr1FQ9jcQv51F5wn2XP9D2MVx7CFa72mfr` (devnet)
+- Program ID: `9oMQzz6sMnnSZ9sDeb5pi8gNyV568qfo4FEGR3uDsyuC` (devnet)
 - Non-Anchor native program using Borsh.
 
 Pages

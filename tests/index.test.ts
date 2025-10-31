@@ -100,7 +100,7 @@ describe("Charge2Earn tests",()=>{
     beforeAll(()=>{
         connection=new Connection(clusterApiUrl("devnet"));
         user=Keypair.fromSecretKey(Uint8Array.from([48,182,182,234,169,224,236,113,52,199,47,66,39,2,163,52,183,44,45,27,127,49,133,151,64,70,248,16,46,218,234,198,42,180,5,68,243,235,189,56,197,37,17,85,205,189,100,191,64,74,171,3,37,193,199,195,213,54,156,198,228,15,248,188]));
-        energyProgram=new PublicKey("9kH9wQbeFXKr1FQ9jcQv51F5wn2XP9D2MVx7CFa72mfr");
+        energyProgram=new PublicKey("9oMQzz6sMnnSZ9sDeb5pi8gNyV568qfo4FEGR3uDsyuC");
 
         chargerCode="xyz40";
         [chargerPda,bump]=PublicKey.findProgramAddressSync([Buffer.from("charger1"), Buffer.from(chargerCode), user.publicKey.toBuffer()],energyProgram);

@@ -29,62 +29,6 @@ export default function ChargerDetailPage() {
   const [listingOpen, setListingOpen] = useState(false);
   const [now, setNow] = useState<number>(() => Math.floor(Date.now() / 1000));
   const pushToast = useUIStore(s => s.pushToast);
-  const [themeIdx, setThemeIdx] = useState(0);
-
-  const themes = [
-    // Keep: Aurora
-    {
-      name: "Aurora",
-      card: "bg-gradient-to-r from-emerald-900 to-indigo-900 text-white",
-      stat: "bg-gradient-to-r from-emerald-950 to-indigo-950 text-white",
-      border: "border-emerald-400/30",
-      subText: "text-emerald-200/80",
-      label: "text-emerald-300/80",
-      badge: "bg-white/10",
-    },
-    // Keep: Cyber Grid
-    {
-      name: "Cyber Grid",
-      card: "bg-[#0d0f14] text-white",
-      stat: "bg-[#0d0f14] text-white",
-      border: "border-cyan-400/20",
-      subText: "text-cyan-200/80",
-      label: "text-cyan-300/70",
-      badge: "bg-cyan-400/10",
-    },
-    // New 1: Volt Blue (electric blue accents)
-    {
-      name: "Volt Blue",
-      card: "bg-gradient-to-r from-sky-900 to-indigo-950 text-white",
-      stat: "bg-gradient-to-r from-sky-950 to-indigo-950 text-white",
-      border: "border-sky-400/30",
-      subText: "text-sky-200/80",
-      label: "text-sky-300/80",
-      badge: "bg-white/10",
-    },
-    // New 2: Mint Slate (slate dark with mint highlights)
-    {
-      name: "Mint Slate",
-      card: "bg-gradient-to-r from-slate-900 to-slate-800 text-white",
-      stat: "bg-slate-950 text-white",
-      border: "border-emerald-400/20",
-      subText: "text-emerald-200/80",
-      label: "text-emerald-300/80",
-      badge: "bg-emerald-400/10",
-    },
-    // New 3: Paper Light (clean light mode)
-    {
-      name: "Paper Light",
-      card: "bg-gradient-to-r from-white to-gray-50 text-gray-900",
-      stat: "bg-white text-gray-900",
-      border: "border-gray-200",
-      subText: "text-gray-600",
-      label: "text-gray-500",
-      badge: "bg-gray-100",
-    },
-  ];
-  const t = themes[themeIdx];
-  const isDark = t.card.includes("text-white");
 
   // live ticker every second while charging
   useEffect(() => {
@@ -209,126 +153,244 @@ export default function ChargerDetailPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-[#0b1220] via-[#0e1630] to-[#0b1220]">
       <Nav />
-      <div className="mx-auto max-w-5xl px-4 py-6">
-        {/* Theme toggle moved to navbar globally */}
+      <div className="mx-auto max-w-7xl px-4 py-6">
+        {/* Charger Info Card */}
         {charger && (
-          <div className={`mt-2 rounded-2xl border ${t.border} p-6 ${t.card}`}>
-            <div className="flex items-start justify-between gap-6 flex-wrap">
-              <div className="min-w-[220px]">
-                <div className="text-2xl font-semibold">{charger.name}</div>
-                <div className={`text-sm ${t.subText}`}>{charger.address}, {charger.city}</div>
-                <div className={`mt-1 text-xs ${t.label}`}>Code: {charger.code}</div>
+          <div className="group relative mb-8">
+            {/* Main Card */}
+            <div className="relative bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-xl rounded-2xl border border-gray-600/20 hover:border-gray-500/40 transition-all duration-300 overflow-hidden">
+              <div className="p-6">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gray-700 rounded-xl flex items-center justify-center text-2xl">
+                      ⚡
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold text-white mb-1.5">{charger.name}</h1>
+                      <p className="text-gray-300">{charger.address}, {charger.city}</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 bg-gray-700/50 rounded-full text-xs text-gray-300">
+                          Code: {charger.code}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-gray-200 mb-1">{charger.power_kw} kW</div>
+                    <div className="text-xs text-gray-400">Power Output</div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-center w-full md:w-auto">
-                <div className={`rounded-lg px-4 py-3 ${t.badge}`}>
-                  <div className={`text-[10px] uppercase tracking-wider ${t.label}`}>Power</div>
-                  <div className="text-lg font-medium">{charger.power_kw} kW</div>
                 </div>
-                <div className={`rounded-lg px-4 py-3 ${t.badge}`}>
-                  <div className={`text-[10px] uppercase tracking-wider ${t.label}`}>Rate</div>
-                  <div className="text-lg font-medium">{charger.rate_points_per_sec.toString()} AMP Points/sec</div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+                  <div className="bg-gray-700/30 rounded-xl p-3.5 text-center">
+                    <div className="text-xl font-bold text-gray-200 mb-1">{charger.rate_points_per_sec.toString()}</div>
+                    <div className="text-[11px] text-gray-400 uppercase tracking-wide">AMP/sec</div>
+                  </div>
+                  <div className="bg-gray-700/30 rounded-xl p-3.5 text-center">
+                    <div className="text-xl font-bold text-gray-200 mb-1">{charger.price_per_sec_lamports.toString()}</div>
+                    <div className="text-[11px] text-gray-400 uppercase tracking-wide">Lamports/sec</div>
+                  </div>
+                  <div className="bg-gray-700/30 rounded-xl p-3.5 text-center">
+                    <div className="text-xl font-bold text-gray-200 mb-1">{charger.latitude.toFixed(4)}</div>
+                    <div className="text-[11px] text-gray-400 uppercase tracking-wide">Latitude</div>
                 </div>
-                <div className={`rounded-lg px-4 py-3 ${t.badge}`}>
-                  <div className={`text-[10px] uppercase tracking-wider ${t.label}`}>Price</div>
-                  <div className="text-lg font-medium whitespace-nowrap">{charger.price_per_sec_lamports.toString()} lamports/sec</div>
+                  <div className="bg-gray-700/30 rounded-xl p-3.5 text-center">
+                    <div className="text-xl font-bold text-gray-200 mb-1">{charger.longitude.toFixed(4)}</div>
+                    <div className="text-[11px] text-gray-400 uppercase tracking-wide">Longitude</div>
                 </div>
-                <div className={`rounded-lg px-4 py-3 ${t.badge}`}>
-                  <div className={`text-[10px] uppercase tracking-wider ${t.label}`}>Geo</div>
-                  <div className="text-sm font-medium">{charger.latitude.toFixed(4)}, {charger.longitude.toFixed(4)}</div>
                 </div>
-                <div className={`rounded-lg px-4 py-3 col-span-2 md:col-span-1 ${t.badge}`}>
-                  <div className={`text-[10px] uppercase tracking-wider ${t.label}`}>Owner</div>
-                  <div className="text-xs font-mono break-all">{ownerPk.toBase58()}</div>
+
+                {/* Owner Info */}
+                <div className="mt-5 p-3.5 bg-gray-700/30 rounded-xl">
+                  <div className="text-xs text-gray-400 mb-1.5">Charger Owner</div>
+                  <div className="text-xs font-mono text-white break-all">{ownerPk.toBase58()}</div>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
-          <div>
-            <h2 className="text-lg font-medium">Session Controls</h2>
-            <p className="text-sm text-gray-600 mt-1">Start and stop your session for this charger.</p>
-            <div className="mt-3 flex gap-3">
-              <button disabled={!publicKey || !driverPda || !chargerPda || busy} onClick={onStart} className="rounded-md bg-black text-white px-4 py-2 disabled:opacity-50 cursor-pointer">{busy ? "Starting..." : "Start Charging"}</button>
-              <button disabled={!publicKey || !driverPda || !chargerPda || !startTs || busy} onClick={onStop} className="rounded-md border px-4 py-2 disabled:opacity-50 cursor-pointer">{busy ? "Stopping..." : "End Charging"}</button>
-            </div>
+        {/* Charging Session (Controls + Live Stats) */}
+        <div className="group relative mb-8">
+          <div className="relative bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-xl rounded-xl border border-gray-600/20 hover:border-gray-500/40 transition-all duration-300 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-white">Charging Session</h2>
+              {txSig && (
+                <a 
+                  href={`https://explorer.solana.com/tx/${txSig}?cluster=devnet`} 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors cursor-pointer text-sm"
+                >
+                  View Transaction ↗️
+                </a>
+              )}
           </div>
           
-          {/* Full-width, dark-themed live session stats */}
-          <div className={`md:col-span-2 mt-2 rounded-xl border p-6 ${t.stat} ${t.border}`}>
-            <div className="grid gap-6 md:grid-cols-3 text-center select-none">
+            {/* Controls + Stats */}
+            <div className="grid gap-5 items-start">
+              {/* Controls */}
               <div>
-                <div className={`uppercase tracking-wide text-xs ${t.label}`}>Time</div>
-                <div className="text-6xl font-semibold tabular-nums leading-none">{elapsed}s</div>
+                <p className="text-gray-400 text-sm mb-3">Start and stop your charging session to earn AMP points</p>
+                <div className="flex gap-3.5">
+                  <button 
+                    disabled={!publicKey || !driverPda || !chargerPda || busy} 
+                    onClick={onStart} 
+                    className="group/btn flex-1 relative px-5 py-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      <span>{busy ? "Starting..." : "Start Charging"}</span>
+                      <span className="group-hover/btn:translate-x-1 transition-transform duration-300">⚡</span>
+                    </span>
+                  </button>
+                  
+                  <button 
+                    disabled={!publicKey || !driverPda || !chargerPda || !startTs || busy} 
+                    onClick={onStop} 
+                    className="group/btn flex-1 relative px-5 py-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      <span>{busy ? "Stopping..." : "End Charging"}</span>
+                      <span className="group-hover/btn:translate-x-1 transition-transform duration-300">⏹️</span>
+                    </span>
+                  </button>
+                </div>
+
+                <div className="mt-5 grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-xs text-gray-400 uppercase tracking-wide">Elapsed</div>
+                    <div className="text-2xl font-bold text-gray-200 tabular-nums leading-none mt-1">{elapsed}s</div>
               </div>
-              <div>
-                <div className={`uppercase tracking-wide text-xs ${t.label}`}>AMP Points Earned</div>
-                <div className="text-6xl font-semibold tabular-nums leading-none break-words">
-                  {charger ? formatBig((charger.rate_points_per_sec || 0n) * BigInt(elapsed)) : "0"}
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-xs text-gray-400 uppercase tracking-wide">AMP Points</div>
+                    <div className="text-2xl font-bold text-gray-200 tabular-nums leading-none mt-1">
+                      {charger ? formatBig((charger.rate_points_per_sec || BigInt(0)) * BigInt(elapsed)) : "0"}
+                    </div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-3">
+                    <div className="text-xs text-gray-400 uppercase tracking-wide">Cost</div>
+                    <div className="text-2xl font-bold text-gray-200 tabular-nums leading-none mt-1 flex items-baseline justify-center gap-1">
+                      <span>{charger ? lamportsToSolString((charger.price_per_sec_lamports || BigInt(0)) * BigInt(elapsed)) : "0"}</span>
+                      <span className="text-sm font-normal">SOL</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className={`uppercase tracking-wide text-xs ${t.label}`}>Cost</div>
-                <div className="text-6xl font-semibold tabular-nums leading-none flex items-baseline justify-center gap-2 whitespace-nowrap">
-                  <span>{charger ? lamportsToSolString((charger.price_per_sec_lamports || 0n) * BigInt(elapsed)) : "0"}</span>
-                  <span className="text-base font-normal">SOL</span>
-                </div>
-              </div>
-            </div>
-            <div className={`mt-4 text-xs ${t.subText}`}>
-              {startTs && <span className="mr-4">Started: {startTs}</span>}
-              {endTs && <span>Ended: {endTs}</span>}
-              {txSig && (
-                <a href={`https://explorer.solana.com/tx/${txSig}?cluster=devnet`} target="_blank" rel="noreferrer" className="ml-4 text-blue-400 underline cursor-pointer">View transaction</a>
-              )}
+
+              
             </div>
           </div>
         </div>
 
-        {/* Full-width Points section with single CTA */}
-        <div className={`mt-6 rounded-xl border p-6 ${t.card} ${t.border}`}>
-          <div className="flex items-center justify-between gap-4 flex-wrap">
+        {/* Points Management */}
+        <div className="group relative">
+          <div className="relative bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-xl rounded-xl border border-gray-600/20 hover:border-gray-500/40 transition-all duration-300 p-6">
+            <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-lg font-medium">Points Management</h2>
-              <p className={`text-sm mt-1 ${t.subText}`}>List or cancel listed AMP points for this driver.</p>
-              <div className="mt-2 text-sm flex items-center gap-2">
-                <span className={`uppercase tracking-wide text-xs ${t.label}`}>Your AMP Points</span>
-                <span className={`px-2 py-1 rounded-md font-mono ${isDark ? 'bg-white/10 text-white' : 'bg-gray-100 text-gray-900'}`}>
+                <h2 className="text-xl font-bold text-white mb-2">Points Management</h2>
+                <p className="text-gray-400 text-sm">List or cancel your AMP points on the marketplace</p>
+                <div className="mt-4 flex items-center gap-3">
+                  <span className="text-sm text-gray-400">Your AMP Balance:</span>
+                  <span className="px-3.5 py-1.5 bg-gray-700 text-white font-bold rounded-lg border border-gray-600/30 text-sm">
                   {driverInfo ? formatBig(driverInfo.amp_balance) : "0"}
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setListingOpen(true)} className="rounded-md bg-black text-white px-4 py-2 cursor-pointer">List Points</button>
-              <button disabled={!publicKey || !driverPda || busy} onClick={onCancelListing} className="rounded-md border px-4 py-2 disabled:opacity-50 cursor-pointer">Cancel Listing</button>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setListingOpen(true)} 
+                  className="group/btn relative px-5 py-2.5 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-600/30 cursor-pointer"
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    <span>List Points</span>
+                    <span className="group-hover/btn:translate-x-1 transition-transform duration-300">💰</span>
+                  </span>
+                </button>
+                
+                <button 
+                  disabled={!publicKey || !driverPda || busy} 
+                  onClick={onCancelListing} 
+                  className="group/btn relative px-5 py-2.5 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    <span>Cancel Listing</span>
+                    <span className="group-hover/btn:translate-x-1 transition-transform duration-300">❌</span>
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
         {listingOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-            <div className="w-full max-w-md rounded-xl bg-neutral-900 text-white p-6 shadow-2xl border border-white/10">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">List AMP Points</h3>
-                <button onClick={() => setListingOpen(false)} className="text-sm text-neutral-400 hover:text-white cursor-pointer">Close</button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <div className="group relative w-full max-w-lg mx-4">
+              <div className="relative bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-xl rounded-xl border border-gray-600/20 p-6 shadow-2xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-2xl font-bold text-white">List AMP Points</h3>
+                  <button 
+                    onClick={() => setListingOpen(false)} 
+                    className="w-8 h-8 rounded-full bg-gray-700/50 hover:bg-gray-600/50 flex items-center justify-center text-white hover:text-gray-300 transition-all duration-300 cursor-pointer"
+                  >
+                    ✕
+                  </button>
               </div>
-              <p className="text-neutral-400 mt-1">Choose amount and price per point (lamports).</p>
-              <div className="mt-4 grid gap-3">
-                <label className="grid gap-1">
-                  <span className="text-sm text-neutral-300">Amount to list (AMP)</span>
-                  <input type="number" className="rounded-md px-3 py-2 bg-neutral-800 border border-white/10 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/20" value={listingAmount} onChange={e => setListingAmount(parseInt(e.target.value))} />
+                
+                <p className="text-gray-400 text-sm mb-4">Choose amount and price per point (lamports) to list on the marketplace.</p>
+                
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="text-sm text-gray-400 mb-2 block">Amount to list (AMP)</span>
+                    <input 
+                      type="number" 
+                      className="w-full rounded-lg px-3.5 py-2.5 bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500/40 focus:border-gray-500/40 transition-all duration-300" 
+                      value={listingAmount} 
+                      onChange={e => setListingAmount(parseInt(e.target.value))} 
+                      placeholder="Enter amount"
+                    />
                 </label>
-                <label className="grid gap-1">
-                  <span className="text-sm text-neutral-300">Price per point (lamports)</span>
-                  <input type="number" className="rounded-md px-3 py-2 bg-neutral-800 border border-white/10 text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-white/20" value={listingPrice} onChange={e => setListingPrice(parseInt(e.target.value))} />
+                  
+                  <label className="block">
+                    <span className="text-sm text-gray-400 mb-2 block">Price per point (lamports)</span>
+                    <input 
+                      type="number" 
+                      className="w-full rounded-lg px-3.5 py-2.5 bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500/40 focus:border-gray-500/40 transition-all duration-300" 
+                      value={listingPrice} 
+                      onChange={e => setListingPrice(parseInt(e.target.value))} 
+                      placeholder="Enter price"
+                    />
                 </label>
               </div>
-              <div className="mt-4 flex gap-2">
-                <button disabled={!publicKey || !driverPda || busy || (driverInfo ? listingAmount > Number(driverInfo.amp_balance) : false)} onClick={async () => { await onCreateListing(); setListingOpen(false); }} className="rounded-md bg-white text-black px-4 py-2 disabled:opacity-50 cursor-pointer">{busy ? "Submitting..." : "Create/Update"}</button>
-                <button disabled={!publicKey || !driverPda || busy} onClick={async () => { await onCancelListing(); setListingOpen(false); }} className="rounded-md border border-white/20 px-4 py-2 disabled:opacity-50 cursor-pointer">Cancel Listing</button>
+                
+                <div className="mt-5 flex gap-3">
+                  <button 
+                    disabled={!publicKey || !driverPda || busy || (driverInfo ? listingAmount > Number(driverInfo.amp_balance) : false)} 
+                    onClick={async () => { await onCreateListing(); setListingOpen(false); }} 
+                    className="group/btn flex-1 relative px-5 py-2.5 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      <span>{busy ? "Submitting..." : "Create/Update"}</span>
+                      <span className="group-hover/btn:translate-x-1 transition-transform duration-300">💰</span>
+                    </span>
+                  </button>
+                  
+                  <button 
+                    disabled={!publicKey || !driverPda || busy} 
+                    onClick={async () => { await onCancelListing(); setListingOpen(false); }} 
+                    className="group/btn flex-1 relative px-5 py-2.5 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      <span>Cancel Listing</span>
+                      <span className="group-hover/btn:translate-x-1 transition-transform duration-300">❌</span>
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
