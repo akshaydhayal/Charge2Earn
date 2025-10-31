@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { Nav } from "@/components/ui/Nav";
-import { useConnection } from "@solana/wallet-adapter-react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { ChargerAccount, fetchChargers } from "@/lib/program";
 import { useUIStore } from "@/lib/uiStore";
 import Link from "next/link";
 import { Spinner } from "@/components/ui/Spinner";
+import { WalletNotConnectedError } from "@/components/ui/WalletNotConnectedError";
+import { AccountBalances } from "@/components/ui/AccountBalances";
 
 export default function ChargersPage() {
   const { connection } = useConnection();
+  const { publicKey } = useWallet();
 
   const [chargers, setChargers] = useState<Array<{ pubkey: PublicKey; data: ChargerAccount }>>([]);
   const chargerVersion = useUIStore(s => s.chargerVersion);
@@ -31,13 +34,19 @@ export default function ChargersPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0b1220] via-[#0e1630] to-[#0b1220]">
       <Nav />
-      <div className="mx-auto max-w-7xl px-4 py-10">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2.5">
+      <AccountBalances />
+      <div className="mx-auto max-w-7xl px-4 py-1">
+        {/* Wallet Not Connected Error */}
+        {!publicKey ? (
+          <WalletNotConnectedError />
+        ) : (
+          <>
+            {/* Header */}
+            <div className="text-center mb-6">
+          {/* <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2.5">
             Available Chargers
-          </h1>
-          <p className="text-base text-gray-400 max-w-2xl mx-auto">
+          </h1> */}
+          <p className="text-lg font-semibold text-gray-300 max-w-2xl mx-auto">
             Select a charging point to start your session and earn AMP points
           </p>
         </div>
@@ -135,6 +144,8 @@ export default function ChargersPage() {
               );
             })}
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

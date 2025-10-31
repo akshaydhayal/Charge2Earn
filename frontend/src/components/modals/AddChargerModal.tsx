@@ -5,6 +5,7 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useMemo, useState } from "react";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import { findChargerPda, ixAddCharger } from "@/lib/program";
+import { WalletNotConnectedError } from "@/components/ui/WalletNotConnectedError";
 
 export function AddChargerModal() {
   const open = useUIStore(s => s.addChargerOpen);
@@ -14,7 +15,6 @@ export function AddChargerModal() {
   const bumpChargerVersion = useUIStore(s => s.bumpChargerVersion);
   const pushToast = useUIStore(s => s.pushToast);
 
-  const [adminStr, setAdminStr] = useState("");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
@@ -38,7 +38,7 @@ export function AddChargerModal() {
     if (!publicKey || !chargerPda) return;
     try {
       setBusy(true);
-      const admin = new PublicKey(adminStr);
+      const admin = new PublicKey("3shLPzr2Dd4d8XShBMrcUnUUoRTf1iEmDDaTXLiBLAC3");
       const ix = ixAddCharger({
         payer: publicKey,
         chargerPda,
@@ -91,18 +91,22 @@ export function AddChargerModal() {
             </button>
           </div>
 
+          {/* Wallet Not Connected Error */}
+          {!publicKey && (
+            <div className="mb-5">
+              <WalletNotConnectedError />
+            </div>
+          )}
+
           {/* Form */}
+          {publicKey ? (
           <div className="space-y-4.5">
-            {/* Admin Public Key */}
-            <label className="block">
-              <span className="text-xs text-gray-400 mb-1.5 block">Admin Public Key (receives reg fee)</span>
-              <input 
-                className="w-full rounded-lg px-3.5 py-2.5 bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all duration-300" 
-                placeholder="Enter admin public key" 
-                value={adminStr} 
-                onChange={e => setAdminStr(e.target.value)} 
-              />
-            </label>
+            {/* Registration Fee Notice */}
+            <div className="p-3.5 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <p className="text-sm text-blue-300">
+                <span className="font-semibold">Registration Fee:</span> Registering a new charger will cost <span className="font-semibold">0.5 SOL</span> as a registration fee, which will be sent to the platform admin.
+              </p>
+            </div>
 
             {/* Code and Name */}
             <div className="grid gap-3.5 grid-cols-1 md:grid-cols-2">
@@ -186,7 +190,7 @@ export function AddChargerModal() {
                 />
               </label>
               <label className="block">
-                <span className="text-xs text-gray-400 mb-1.5 block">Rate: AMP/sec</span>
+                <span className="text-xs text-gray-400 mb-1.5 block">Points Earn Rate: AMP/sec</span>
                 <input 
                   type="number" 
                   className="w-full rounded-lg px-3.5 py-2.5 bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all duration-300" 
@@ -196,7 +200,7 @@ export function AddChargerModal() {
                 />
               </label>
               <label className="block">
-                <span className="text-xs text-gray-400 mb-1.5 block">Price: lamports/sec</span>
+                <span className="text-xs text-gray-400 mb-1.5 block">Charger Price: lamports/sec</span>
                 <input 
                   type="number" 
                   className="w-full rounded-lg px-3.5 py-2.5 bg-white/10 border border-white/20 text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500/40 transition-all duration-300" 
@@ -231,7 +235,7 @@ export function AddChargerModal() {
               </div>
               
               <button 
-                disabled={!publicKey || !chargerPda || !adminStr || busy} 
+                disabled={!publicKey || !chargerPda || busy} 
                 onClick={onRegister} 
                 className="group/btn relative px-5 py-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
@@ -242,6 +246,7 @@ export function AddChargerModal() {
               </button>
             </div>
           </div>
+          ) : null}
         </div>
       </div>
     </div>

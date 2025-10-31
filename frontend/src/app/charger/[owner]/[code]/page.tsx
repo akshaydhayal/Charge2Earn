@@ -1,6 +1,7 @@
 "use client";
 
 import { Nav } from "@/components/ui/Nav";
+import { AccountBalances } from "@/components/ui/AccountBalances";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
@@ -29,6 +30,7 @@ export default function ChargerDetailPage() {
   const [listingOpen, setListingOpen] = useState(false);
   const [now, setNow] = useState<number>(() => Math.floor(Date.now() / 1000));
   const pushToast = useUIStore(s => s.pushToast);
+  const bumpAccountBalanceVersion = useUIStore(s => s.bumpAccountBalanceVersion);
 
   // live ticker every second while charging
   useEffect(() => {
@@ -106,6 +108,7 @@ export default function ChargerDetailPage() {
       const sig = await sendTransaction(tx, connection);
       await connection.confirmTransaction(sig, "finalized");
       setTxSig(sig);
+      bumpAccountBalanceVersion(); // Refresh account balances
       pushToast({ message: "Charging session ended.", tx: sig });
     } catch (e) {
       console.error(e);
@@ -125,6 +128,7 @@ export default function ChargerDetailPage() {
       const sig = await sendTransaction(tx, connection);
       await connection.confirmTransaction(sig, "finalized");
       setTxSig(sig);
+      bumpAccountBalanceVersion(); // Refresh account balances
       pushToast({ message: "Points listed on marketplace.", tx: sig });
     } catch (e) {
       console.error(e);
@@ -143,6 +147,7 @@ export default function ChargerDetailPage() {
       const sig = await sendTransaction(tx, connection);
       await connection.confirmTransaction(sig, "finalized");
       setTxSig(sig);
+      bumpAccountBalanceVersion(); // Refresh account balances
       pushToast({ message: "Listing canceled.", tx: sig });
     } catch (e) {
       console.error(e);
@@ -153,26 +158,27 @@ export default function ChargerDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0b1220] via-[#0e1630] to-[#0b1220]">
+    <div className="min-h-screen bg-gradient-to-br from-[#0b1220] via-[#0e1630] to-[#0b1220] text-white">
       <Nav />
+      <AccountBalances />
       <div className="mx-auto max-w-7xl px-4 py-6">
         {/* Charger Info Card */}
         {charger && (
           <div className="group relative mb-8">
             {/* Main Card */}
-            <div className="relative bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-xl rounded-2xl border border-gray-600/20 hover:border-gray-500/40 transition-all duration-300 overflow-hidden">
+            <div className="relative bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-purple-500/10 backdrop-blur-xl rounded-2xl border border-blue-500/30 hover:border-blue-400/50 transition-all duration-300 overflow-hidden shadow-lg shadow-blue-500/10">
               <div className="p-6">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-8">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-700 rounded-xl flex items-center justify-center text-2xl">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-blue-500/30">
                       ⚡
                     </div>
                     <div>
                       <h1 className="text-2xl font-bold text-white mb-1.5">{charger.name}</h1>
                       <p className="text-gray-300">{charger.address}, {charger.city}</p>
                       <div className="mt-2 flex items-center gap-2">
-                        <span className="px-2.5 py-0.5 bg-gray-700/50 rounded-full text-xs text-gray-300">
+                        <span className="px-2.5 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded-full text-xs text-blue-300">
                           Code: {charger.code}
                         </span>
                       </div>
@@ -187,26 +193,26 @@ export default function ChargerDetailPage() {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-                  <div className="bg-gray-700/30 rounded-xl p-3.5 text-center">
+                  <div className="bg-gradient-to-br from-blue-500/20 to-indigo-500/10 rounded-xl p-3.5 text-center border border-blue-500/20">
                     <div className="text-xl font-bold text-gray-200 mb-1">{charger.rate_points_per_sec.toString()}</div>
                     <div className="text-[11px] text-gray-400 uppercase tracking-wide">AMP/sec</div>
                   </div>
-                  <div className="bg-gray-700/30 rounded-xl p-3.5 text-center">
+                  <div className="bg-gradient-to-br from-blue-500/20 to-indigo-500/10 rounded-xl p-3.5 text-center border border-blue-500/20">
                     <div className="text-xl font-bold text-gray-200 mb-1">{charger.price_per_sec_lamports.toString()}</div>
                     <div className="text-[11px] text-gray-400 uppercase tracking-wide">Lamports/sec</div>
                   </div>
-                  <div className="bg-gray-700/30 rounded-xl p-3.5 text-center">
+                  <div className="bg-gradient-to-br from-blue-500/20 to-indigo-500/10 rounded-xl p-3.5 text-center border border-blue-500/20">
                     <div className="text-xl font-bold text-gray-200 mb-1">{charger.latitude.toFixed(4)}</div>
                     <div className="text-[11px] text-gray-400 uppercase tracking-wide">Latitude</div>
                 </div>
-                  <div className="bg-gray-700/30 rounded-xl p-3.5 text-center">
+                  <div className="bg-gradient-to-br from-blue-500/20 to-indigo-500/10 rounded-xl p-3.5 text-center border border-blue-500/20">
                     <div className="text-xl font-bold text-gray-200 mb-1">{charger.longitude.toFixed(4)}</div>
                     <div className="text-[11px] text-gray-400 uppercase tracking-wide">Longitude</div>
                 </div>
                 </div>
 
                 {/* Owner Info */}
-                <div className="mt-5 p-3.5 bg-gray-700/30 rounded-xl">
+                <div className="mt-5 p-3.5 bg-gradient-to-r from-blue-500/15 to-indigo-500/10 rounded-xl border border-blue-500/20">
                   <div className="text-xs text-gray-400 mb-1.5">Charger Owner</div>
                   <div className="text-xs font-mono text-white break-all">{ownerPk.toBase58()}</div>
                 </div>
@@ -217,9 +223,12 @@ export default function ChargerDetailPage() {
 
         {/* Charging Session (Controls + Live Stats) */}
         <div className="group relative mb-8">
-          <div className="relative bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-xl rounded-xl border border-gray-600/20 hover:border-gray-500/40 transition-all duration-300 p-5">
+          <div className="relative bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-cyan-500/10 backdrop-blur-xl rounded-xl border border-emerald-500/30 hover:border-emerald-400/50 transition-all duration-300 p-5 shadow-lg shadow-emerald-500/10">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">Charging Session</h2>
+              <div className="flex items-center gap-2.5">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                <h2 className="text-xl font-bold text-white">Charging Session</h2>
+            </div>
               {txSig && (
                 <a 
                   href={`https://explorer.solana.com/tx/${txSig}?cluster=devnet`} 
@@ -241,7 +250,7 @@ export default function ChargerDetailPage() {
                   <button 
                     disabled={!publicKey || !driverPda || !chargerPda || busy} 
                     onClick={onStart} 
-                    className="group/btn flex-1 relative px-5 py-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="group/btn flex-1 relative px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-lg hover:from-emerald-500 hover:to-teal-500 transition-all duration-300 transform hover:scale-105 border border-emerald-500/30 shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     <span className="relative z-10 flex items-center justify-center gap-2">
                       <span>{busy ? "Starting..." : "Start Charging"}</span>
@@ -252,7 +261,7 @@ export default function ChargerDetailPage() {
                   <button 
                     disabled={!publicKey || !driverPda || !chargerPda || !startTs || busy} 
                     onClick={onStop} 
-                    className="group/btn flex-1 relative px-5 py-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="group/btn flex-1 relative px-5 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white font-semibold rounded-lg hover:from-red-500 hover:to-orange-500 transition-all duration-300 transform hover:scale-105 border border-red-500/30 shadow-lg shadow-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     <span className="relative z-10 flex items-center justify-center gap-2">
                       <span>{busy ? "Stopping..." : "End Charging"}</span>
@@ -262,17 +271,17 @@ export default function ChargerDetailPage() {
                 </div>
 
                 <div className="mt-5 grid grid-cols-3 gap-3 text-center">
-                  <div className="bg-white/5 rounded-lg p-3">
+                  <div className="bg-gradient-to-br from-emerald-500/20 to-teal-500/10 rounded-lg p-3 border border-emerald-500/20">
                     <div className="text-xs text-gray-400 uppercase tracking-wide">Elapsed</div>
                     <div className="text-2xl font-bold text-gray-200 tabular-nums leading-none mt-1">{elapsed}s</div>
               </div>
-                  <div className="bg-white/5 rounded-lg p-3">
+                  <div className="bg-gradient-to-br from-emerald-500/20 to-teal-500/10 rounded-lg p-3 border border-emerald-500/20">
                     <div className="text-xs text-gray-400 uppercase tracking-wide">AMP Points</div>
                     <div className="text-2xl font-bold text-gray-200 tabular-nums leading-none mt-1">
                       {charger ? formatBig((charger.rate_points_per_sec || BigInt(0)) * BigInt(elapsed)) : "0"}
                     </div>
                   </div>
-                  <div className="bg-white/5 rounded-lg p-3">
+                  <div className="bg-gradient-to-br from-emerald-500/20 to-teal-500/10 rounded-lg p-3 border border-emerald-500/20">
                     <div className="text-xs text-gray-400 uppercase tracking-wide">Cost</div>
                     <div className="text-2xl font-bold text-gray-200 tabular-nums leading-none mt-1 flex items-baseline justify-center gap-1">
                       <span>{charger ? lamportsToSolString((charger.price_per_sec_lamports || BigInt(0)) * BigInt(elapsed)) : "0"}</span>
@@ -289,14 +298,17 @@ export default function ChargerDetailPage() {
 
         {/* Points Management */}
         <div className="group relative">
-          <div className="relative bg-gradient-to-br from-white/5 to-white/2 backdrop-blur-xl rounded-xl border border-gray-600/20 hover:border-gray-500/40 transition-all duration-300 p-6">
+          <div className="relative bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-amber-500/10 backdrop-blur-xl rounded-xl border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 p-6 shadow-lg shadow-purple-500/10">
             <div className="flex items-center justify-between mb-6">
             <div>
-                <h2 className="text-xl font-bold text-white mb-2">Points Management</h2>
+                <div className="flex items-center gap-2.5 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                  <h2 className="text-xl font-bold text-white">Points Management</h2>
+                </div>
                 <p className="text-gray-400 text-sm">List or cancel your AMP points on the marketplace</p>
                 <div className="mt-4 flex items-center gap-3">
                   <span className="text-sm text-gray-400">Your AMP Balance:</span>
-                  <span className="px-3.5 py-1.5 bg-gray-700 text-white font-bold rounded-lg border border-gray-600/30 text-sm">
+                  <span className="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg border border-purple-500/30 text-sm shadow-md shadow-purple-500/20">
                   {driverInfo ? formatBig(driverInfo.amp_balance) : "0"}
                 </span>
               </div>
@@ -305,7 +317,7 @@ export default function ChargerDetailPage() {
               <div className="flex gap-3">
                 <button 
                   onClick={() => setListingOpen(true)} 
-                  className="group/btn relative px-5 py-2.5 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-600/30 cursor-pointer"
+                  className="group/btn relative px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-500 hover:to-pink-500 transition-all duration-300 transform hover:scale-105 border border-purple-500/30 shadow-lg shadow-purple-500/20 cursor-pointer"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     <span>List Points</span>
@@ -316,7 +328,7 @@ export default function ChargerDetailPage() {
                 <button 
                   disabled={!publicKey || !driverPda || busy} 
                   onClick={onCancelListing} 
-                  className="group/btn relative px-5 py-2.5 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="group/btn relative px-5 py-2.5 bg-gradient-to-r from-gray-700 to-gray-600 text-white font-semibold rounded-lg hover:from-gray-600 hover:to-gray-500 transition-all duration-300 transform hover:scale-105 border border-gray-600/30 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     <span>Cancel Listing</span>

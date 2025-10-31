@@ -30,13 +30,13 @@ export function Nav() {
             href="/marketplace" 
             className="group relative px-3.5 py-2 rounded-md text-indigo-200/80 hover:text-white transition-all duration-300 hover:bg-indigo-900/40 cursor-pointer"
           >
-            <span className="relative z-10">Marketplace</span>
+            <span className="relative z-10">Points Marketplace</span>
           </Link>
           <Link 
             href="/leaderboard" 
             className="group relative px-3.5 py-2 rounded-md text-indigo-200/80 hover:text-white transition-all duration-300 hover:bg-indigo-900/40 cursor-pointer"
           >
-            <span className="relative z-10">Leaderboard</span>
+            <span className="relative z-10">Driver&apos;s Leaderboard</span>
           </Link>
         </nav>
         

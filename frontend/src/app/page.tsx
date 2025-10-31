@@ -1,13 +1,27 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Nav } from "@/components/ui/Nav";
+import { AccountBalances } from "@/components/ui/AccountBalances";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useUIStore } from "@/lib/uiStore";
 
 export default function Home() {
+  const router = useRouter();
+  const { publicKey } = useWallet();
   const openAddCharger = useUIStore(s => s.openAddCharger);
+
+  // Redirect to /chargers when wallet is connected
+  useEffect(() => {
+    if (publicKey) {
+      router.push("/chargers");
+    }
+  }, [publicKey, router]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0b1220] via-[#0e1630] to-[#0b1220]">
       <Nav />
+      <AccountBalances />
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         {/* Subtle background elements */}
@@ -50,12 +64,14 @@ export default function Home() {
                 Points Marketplace
               </Link>
               
-              <button 
-                onClick={openAddCharger} 
-                className="group px-5 py-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-500/30 cursor-pointer"
-              >
-                Register Charger
-              </button>
+              {publicKey && (
+                <button 
+                  onClick={openAddCharger} 
+                  className="group px-5 py-3 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all duration-300 transform hover:scale-105 border border-gray-500/30 cursor-pointer"
+                >
+                  Register Charger
+                </button>
+              )}
             </div>
           </div>
           

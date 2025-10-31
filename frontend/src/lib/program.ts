@@ -151,6 +151,30 @@ export async function fetchDriver(connection: Connection, driverPda: PublicKey):
   }
 }
 
+const userAccountSchema: borsh.Schema = {
+  struct: {
+    accountType: "u8",
+    amp_balance: "u64",
+  },
+};
+
+export type UserAccount = {
+  accountType: number;
+  amp_balance: bigint;
+};
+
+export async function fetchUser(connection: Connection, userPda: PublicKey): Promise<UserAccount | null> {
+  const info = await connection.getAccountInfo(userPda);
+  if (!info?.data) return null;
+  try {
+    const data = borsh.deserialize(userAccountSchema, info.data) as UserAccount;
+    if (data.accountType !== 5) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 // ----- PDA helpers -----
 export function findChargerPda(code: string, owner: PublicKey) {
   return PublicKey.findProgramAddressSync(
