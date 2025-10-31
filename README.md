@@ -1,8 +1,7 @@
 # Charge2Earn: Blockchain-Powered EV Charging Rewards Platform
+Live Project Link: [https://charge2-earn.vercel.app/](https://charge2-earn.vercel.app/)
 
 <div align="center">
-
-![Charge2Earn Logo](./assets/logo.png)
 
 **Gamifying Sustainable Transportation Through Blockchain Rewards**
 
@@ -32,42 +31,37 @@
 
 ---
 
-## 🎥 Demo
-
-### Video Demo
-
-<!-- TODO: Add video demo link or embed here -->
-<!-- Example: [![Video Demo](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=VIDEO_ID) -->
-
-**Demo Video Coming Soon** 🎬
+## 🎥 Demo Video
+[https://www.loom.com/share/81ecb063ef90476fa2e2abc916047976](https://www.loom.com/share/81ecb063ef90476fa2e2abc916047976)
 
 ---
 
-## 📸 Screenshots
-
-### Home Page
-![Home Page](./screenshots/homepage.png)
-*Landing page with hero section, feature cards, and navigation*
+## 📸 Website Demo
 
 ### Chargers List
-![Chargers Page](./screenshots/chargers.png)
+![Chargers Page](https://github.com/akshaydhayal/Charge2Earn/blob/main/frontend/assets/chargers.png)
 *Browse all available charging stations with real-time availability*
 
-### Charging Session
-![Charging Session](./screenshots/charging-session.png)
-*Live charging session with real-time stats: elapsed time, AMP points earned, and cost*
+### Specific Charger Page
+![Specific Charger Page](https://github.com/akshaydhayal/Charge2Earn/blob/main/frontend/assets/chargepage.png)
+*Specific Charger page with Charging Station info section, charging feature for driver's vehcile with real-time charging stats: elapsed time, AMP points earned, and cost*
 
 ### Marketplace
-![Marketplace](./screenshots/marketplace.png)
+![Marketplace](https://github.com/akshaydhayal/Charge2Earn/blob/main/frontend/assets/marketplace.png)
 *Peer-to-peer marketplace for buying and selling AMP points*
 
 ### Leaderboard
-![Leaderboard](./screenshots/leaderboard.png)
+![Leaderboard](https://github.com/akshaydhayal/Charge2Earn/blob/main/frontend/assets/leaderboard.png)
 *Top eco-drivers ranked by their AMP point balances*
 
-### Account Balances
-![Account Balances](./screenshots/account-balances.png)
-*Driver and User account balances displayed at the top of all pages*
+### Register Charging Station Modal
+![Account Balances](https://github.com/akshaydhayal/Charge2Earn/blob/main/frontend/assets/register_charger.png)
+
+### Buy Listed Points from Marketplace
+![Account Balances](https://github.com/akshaydhayal/Charge2Earn/blob/main/frontend/assets/buy%20points.png)
+
+### List Driver's AMP Points
+![Account Balances](https://github.com/akshaydhayal/Charge2Earn/blob/main/frontend/assets/list%20points.png)
 
 ---
 
@@ -139,11 +133,6 @@
 - **UI Components**: Custom components with dark theme
 - **Deployment**: Vercel-ready
 
-### Development Tools
-- **Package Manager**: npm
-- **Build Tool**: Next.js built-in
-- **Testing**: TypeScript tests for contract interactions
-
 ---
 
 ## 📁 Project Structure
@@ -177,15 +166,6 @@ charge2Earn/
 │   └── README.md           # Frontend-specific README
 │
 ├── tests/                  # Contract tests (TypeScript)
-│
-├── screenshots/            # Screenshots directory (add your images here)
-├── assets/                 # Project assets (logo, etc.)
-│
-├── PITCH_DECK.md          # Detailed pitch deck
-├── PITCH_DECK_SLIDES.md   # Slide-by-slide content
-├── GEMINI_SLIDE_PROMPTS.md # Google Slides prompts
-├── PRESENTATION_SCRIPT.md  # Demo presentation script
-├── NOTION_DOC.md          # Notion-style documentation
 └── README.md              # This file
 ```
 
@@ -397,46 +377,6 @@ cd tests
 npm test
 ```
 
-### Frontend Build Test
-
-```bash
-cd frontend
-npm run build
-```
-
----
-
-## 🚢 Deployment
-
-### Contract Deployment
-
-```bash
-# Set cluster
-solana config set --url devnet
-
-# Deploy program
-solana program deploy target/deploy/contract.so
-```
-
-### Frontend Deployment
-
-#### Vercel (Recommended)
-
-1. Push code to GitHub
-2. Import project to Vercel
-3. Configure environment variables
-4. Deploy
-
-#### Manual Build
-
-```bash
-cd frontend
-npm run build
-# Deploy .next folder to your hosting service
-```
-
----
-
 ## 🔐 Security Considerations
 
 - All transactions are on-chain and verifiable
@@ -457,67 +397,12 @@ Contributions are welcome! Please follow these steps:
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-### Development Guidelines
-
-- Follow TypeScript and Rust best practices
-- Maintain code documentation
-- Write tests for new features
-- Follow existing code style
-- Update README for significant changes
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-## 👥 Authors
-
-- **Your Name** - *Initial work* - [Your GitHub](https://github.com/yourusername)
-
----
-
-## 🙏 Acknowledgments
-
-- Solana Foundation for the excellent blockchain platform
-- Next.js team for the amazing framework
-- Solana Wallet Adapter developers
-- All contributors and testers
-
----
-
-## 📞 Contact & Links
-
-- **Email**: [your-email@example.com](mailto:your-email@example.com)
-- **GitHub**: [Repository Link](https://github.com/yourusername/charge2Earn)
-- **Demo**: [Live Demo URL](https://your-demo-url.vercel.app)
-- **LinkedIn**: [Your Profile](https://linkedin.com/in/yourprofile)
-- **Solana Explorer**: [Program on Devnet](https://explorer.solana.com/address/9oMQzz6sMnnSZ9sDeb5pi8gNyV568qfo4FEGR3uDsyuC?cluster=devnet)
-
----
-
-## 📊 Project Status
-
-- ✅ Smart Contract: Complete and deployed
-- ✅ Frontend: Complete and functional
-- ✅ Core Features: All implemented
-- 🔄 Marketplace: Active and working
-- 🔄 Leaderboard: Active and updating
-- 📱 Mobile Responsive: Yes
-- 🌐 Production Ready: Yes (Devnet)
-
----
-
 ## 🗺️ Roadmap
 
-- [ ] Mainnet deployment
-- [ ] Mobile app development
 - [ ] Advanced analytics dashboard
 - [ ] Token staking features
+- [ ] Mainnet deployment
 - [ ] Governance mechanism
-- [ ] Multi-chain expansion
 - [ ] IoT integration for real charging stations
 
 ---
